@@ -1,0 +1,169 @@
+{
+  "updated": "2026-08-18",
+  "note": "견종별 호발 질환 정보는 일반적인 수의학 참고 자료를 요약한 것으로, 개별 반려견의 진단을 대체하지 않습니다.",
+  "sizes": {
+    "toy": "초소형견 (~5kg)",
+    "small": "소형견 (5~10kg)",
+    "medium": "중형견 (10~25kg)",
+    "large": "대형견 (25kg~)"
+  },
+  "breeds": [
+    { "name": "말티즈", "size": "toy", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "슬개골 탈구", "severity": "high", "from": 0, "signs": "뒷다리를 들고 깡충거림, 앉을 때 다리를 옆으로 뻗음", "care": "미끄럼 방지 매트, 계단·소파 점프 제한, 체중 관리" },
+        { "cond": "기관 허탈", "severity": "high", "from": 5, "signs": "거위 울음 같은 마른 기침, 흥분 시 호흡곤란", "care": "목줄 대신 하네스 사용, 비만 예방" },
+        { "cond": "눈물 착색 / 각막 질환", "severity": "mid", "from": 0, "signs": "눈 주변 갈색 착색, 눈 비비기", "care": "눈 주변 청결, 정기 안과 검진" },
+        { "cond": "간문맥 단락", "severity": "mid", "from": 0, "signs": "성장 부진, 식후 멍한 상태", "care": "어린 나이 혈액검사 시 담즙산 확인" }
+      ]},
+    { "name": "푸들(토이/미니어처)", "size": "toy", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "슬개골 탈구", "severity": "high", "from": 0, "signs": "다리 절뚝임, 스킵 보행", "care": "관절 영양제, 발바닥 털 관리" },
+        { "cond": "진행성 망막 위축(PRA)", "severity": "mid", "from": 3, "signs": "어두운 곳에서 부딪힘, 야맹", "care": "정기 안저 검사" },
+        { "cond": "애디슨병", "severity": "mid", "from": 2, "signs": "무기력, 구토, 반복적 컨디션 저하", "care": "이상 증상 반복 시 전해질 검사" },
+        { "cond": "외이염", "severity": "mid", "from": 0, "signs": "귀 긁기, 냄새, 갈색 분비물", "care": "귓속 털 관리, 목욕 후 건조" }
+      ]},
+    { "name": "포메라니안", "size": "toy", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "기관 허탈", "severity": "high", "from": 4, "signs": "마른 기침, 헐떡임", "care": "하네스 착용, 실내 습도 유지" },
+        { "cond": "슬개골 탈구", "severity": "high", "from": 0, "signs": "뒷다리 절뚝임", "care": "점프 제한" },
+        { "cond": "탈모증(BSD/Alopecia X)", "severity": "low", "from": 2, "signs": "몸통 대칭성 털 빠짐", "care": "호르몬 검사" },
+        { "cond": "치주 질환", "severity": "high", "from": 2, "signs": "입냄새, 치석, 잇몸 출혈", "care": "매일 양치, 연 1회 스케일링 상담" }
+      ]},
+    { "name": "시츄", "size": "small", "lifespan": [10, 16],
+      "risks": [
+        { "cond": "단두종 기도 증후군", "severity": "high", "from": 0, "signs": "코골이, 더위에 취약, 호흡음", "care": "여름철 산책 자제, 체중 관리" },
+        { "cond": "각막 궤양 / 안구 돌출", "severity": "high", "from": 0, "signs": "눈물, 눈 찡그림, 충혈", "care": "얼굴 주름 청결, 눈 보호" },
+        { "cond": "추간판 질환", "severity": "mid", "from": 4, "signs": "허리 통증, 뒷다리 마비", "care": "높은 곳 점프 금지" },
+        { "cond": "아토피성 피부염", "severity": "mid", "from": 1, "signs": "발 핥기, 겨드랑이 붉어짐", "care": "알러지 원인 식이 점검" }
+      ]},
+    { "name": "요크셔테리어", "size": "toy", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "기관 허탈", "severity": "high", "from": 5, "signs": "거위 기침", "care": "하네스 사용" },
+        { "cond": "간문맥 단락", "severity": "mid", "from": 0, "signs": "저성장, 신경 증상", "care": "어린 시기 혈액검사" },
+        { "cond": "저혈당(퍼피)", "severity": "high", "from": 0, "to": 1, "signs": "무기력, 경련, 창백한 잇몸", "care": "소량 잦은 급여, 꿀 상비" },
+        { "cond": "치주 질환", "severity": "high", "from": 2, "signs": "치석, 입냄새", "care": "매일 양치" }
+      ]},
+    { "name": "치와와", "size": "toy", "lifespan": [12, 18],
+      "risks": [
+        { "cond": "슬개골 탈구", "severity": "high", "from": 0, "signs": "뒷다리 스킵 보행", "care": "체중 관리" },
+        { "cond": "수두증", "severity": "mid", "from": 0, "signs": "돔형 두개골, 경련, 방향감각 상실", "care": "이상 시 신경과 진료" },
+        { "cond": "심장 판막 질환", "severity": "high", "from": 7, "signs": "기침, 운동 기피, 빠른 호흡", "care": "연 1회 심장 초음파" },
+        { "cond": "저혈당(퍼피)", "severity": "high", "from": 0, "to": 1, "signs": "쳐짐, 떨림", "care": "소량 잦은 급여" }
+      ]},
+    { "name": "비숑프리제", "size": "small", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "아토피 / 알러지 피부염", "severity": "high", "from": 1, "signs": "발 핥기, 귀 염증 재발", "care": "저알러지 식단 테스트" },
+        { "cond": "방광 결석", "severity": "mid", "from": 3, "signs": "빈뇨, 혈뇨, 배뇨통", "care": "충분한 음수, 소변 검사" },
+        { "cond": "슬개골 탈구", "severity": "mid", "from": 0, "signs": "절뚝임", "care": "미끄럼 방지" },
+        { "cond": "외이염", "severity": "mid", "from": 0, "signs": "귀 냄새", "care": "귀 청소 주기 관리" }
+      ]},
+    { "name": "웰시코기", "size": "medium", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "추간판 질환(IVDD)", "severity": "high", "from": 3, "signs": "허리 통증, 걷기 싫어함, 후지 마비", "care": "체중 엄격 관리, 계단·점프 금지" },
+        { "cond": "퇴행성 척수증(DM)", "severity": "high", "from": 7, "signs": "뒷발 끌림, 점진적 마비", "care": "유전자 검사, 재활 운동" },
+        { "cond": "고관절 이형성", "severity": "mid", "from": 1, "signs": "일어설 때 힘들어함", "care": "관절 보조제" },
+        { "cond": "비만", "severity": "high", "from": 1, "signs": "허리 라인 소실", "care": "칼로리 계산 급여" }
+      ]},
+    { "name": "골든리트리버", "size": "large", "lifespan": [10, 12],
+      "risks": [
+        { "cond": "고관절/주관절 이형성", "severity": "high", "from": 1, "signs": "토끼뜀 보행, 운동 후 절뚝임", "care": "성장기 과도한 운동 자제, 체중 관리" },
+        { "cond": "림프종 등 종양", "severity": "high", "from": 6, "signs": "림프절 종대, 체중 감소", "care": "6개월마다 촉진·검진" },
+        { "cond": "갑상선 기능 저하증", "severity": "mid", "from": 4, "signs": "체중 증가, 무기력, 탈모", "care": "T4 검사" },
+        { "cond": "위확장 염전(GDV)", "severity": "high", "from": 3, "signs": "복부 팽만, 헛구역질 — 응급", "care": "식후 운동 제한, 나눠 급여" }
+      ]},
+    { "name": "래브라도리트리버", "size": "large", "lifespan": [10, 13],
+      "risks": [
+        { "cond": "비만", "severity": "high", "from": 1, "signs": "체형 점수 상승", "care": "간식 통제, 칼로리 계산" },
+        { "cond": "고관절 이형성", "severity": "high", "from": 1, "signs": "뒷다리 약화", "care": "관절 보조제, 수영 운동" },
+        { "cond": "외이염", "severity": "mid", "from": 0, "signs": "귀 흔들기", "care": "수영 후 귀 건조" },
+        { "cond": "위확장 염전(GDV)", "severity": "high", "from": 3, "signs": "복부 팽만 — 응급", "care": "천천히 먹는 식기" }
+      ]},
+    { "name": "진돗개", "size": "medium", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "갑상선 기능 저하증", "severity": "mid", "from": 4, "signs": "무기력, 피모 불량", "care": "정기 호르몬 검사" },
+        { "cond": "고관절 이형성", "severity": "mid", "from": 2, "signs": "보행 이상", "care": "적정 운동량 유지" },
+        { "cond": "피부 알러지", "severity": "mid", "from": 1, "signs": "가려움, 발적", "care": "환경·식이 관리" },
+        { "cond": "분리불안/스트레스성 문제행동", "severity": "mid", "from": 1, "signs": "짖음, 파괴 행동", "care": "충분한 산책과 사회화" }
+      ]},
+    { "name": "프렌치불독", "size": "small", "lifespan": [10, 12],
+      "risks": [
+        { "cond": "단두종 기도 증후군", "severity": "high", "from": 0, "signs": "코골이, 청색 잇몸, 더위 취약", "care": "여름 산책 금지 시간대, 절대 비만 예방" },
+        { "cond": "추간판 질환/반척추", "severity": "high", "from": 2, "signs": "허리 통증, 후지 마비", "care": "점프 금지, 하네스" },
+        { "cond": "아토피성 피부염 / 주름 피부염", "severity": "high", "from": 1, "signs": "얼굴 주름 발적, 발 핥기", "care": "주름 사이 매일 닦기" },
+        { "cond": "열사병", "severity": "high", "from": 0, "signs": "과호흡, 침 흘림 — 응급", "care": "25도 이상 야외 활동 자제" }
+      ]},
+    { "name": "닥스훈트", "size": "small", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "추간판 질환(IVDD)", "severity": "high", "from": 2, "signs": "허리 굽힘, 통증 비명, 마비", "care": "계단·소파 금지, 체중 엄수" },
+        { "cond": "비만", "severity": "high", "from": 1, "signs": "허리 라인 소실", "care": "간식 제한" },
+        { "cond": "쿠싱 증후군", "severity": "mid", "from": 6, "signs": "다음다뇨, 배 처짐, 탈모", "care": "혈액·호르몬 검사" },
+        { "cond": "치주 질환", "severity": "mid", "from": 3, "signs": "치석", "care": "양치 습관" }
+      ]},
+    { "name": "시바이누", "size": "medium", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "아토피성 피부염", "severity": "high", "from": 1, "signs": "발·귀 가려움 반복", "care": "알러지 검사, 보습" },
+        { "cond": "슬개골 탈구", "severity": "mid", "from": 0, "signs": "절뚝임", "care": "체중 관리" },
+        { "cond": "녹내장", "severity": "mid", "from": 5, "signs": "눈 충혈, 통증, 시력 저하", "care": "안압 검사" },
+        { "cond": "고관절 이형성", "severity": "low", "from": 2, "signs": "보행 이상", "care": "적정 운동" }
+      ]},
+    { "name": "보더콜리", "size": "medium", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "MDR1 약물 과민증", "severity": "high", "from": 0, "signs": "특정 구충제·마취제에 심한 반응", "care": "유전자 검사 후 병원에 반드시 고지" },
+        { "cond": "콜리 눈 기형(CEA)", "severity": "mid", "from": 0, "signs": "시력 이상", "care": "어린 시기 안과 검진" },
+        { "cond": "간질", "severity": "mid", "from": 2, "signs": "발작", "care": "발작 일지 기록" },
+        { "cond": "고관절 이형성", "severity": "mid", "from": 1, "signs": "운동 후 절뚝임", "care": "관절 관리" }
+      ]},
+    { "name": "미니어처 슈나우저", "size": "small", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "고지혈증 / 췌장염", "severity": "high", "from": 3, "signs": "구토, 복통, 기름진 음식 후 악화", "care": "저지방 식단 필수, 중성지방 검사" },
+        { "cond": "요로 결석", "severity": "mid", "from": 3, "signs": "혈뇨, 빈뇨", "care": "음수량 증가" },
+        { "cond": "당뇨병", "severity": "mid", "from": 6, "signs": "다음다뇨, 체중 감소", "care": "혈당 검사" },
+        { "cond": "슈나우저 콤도 증후군", "severity": "low", "from": 2, "signs": "등쪽 블랙헤드", "care": "피부 관리" }
+      ]},
+    { "name": "잭러셀테리어", "size": "small", "lifespan": [13, 16],
+      "risks": [
+        { "cond": "슬개골 탈구", "severity": "mid", "from": 0, "signs": "절뚝임", "care": "관절 관리" },
+        { "cond": "레그-페테스병", "severity": "mid", "from": 0, "to": 2, "signs": "한쪽 뒷다리 통증", "care": "성장기 방사선 확인" },
+        { "cond": "수정체 탈구", "severity": "mid", "from": 3, "signs": "눈 통증, 충혈", "care": "안과 정기 검진" },
+        { "cond": "과활동성 스트레스", "severity": "low", "from": 1, "signs": "과잉 짖음", "care": "충분한 활동량" }
+      ]},
+    { "name": "비글", "size": "medium", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "비만", "severity": "high", "from": 1, "signs": "끝없는 식욕, 체중 증가", "care": "정량 급여 철저" },
+        { "cond": "간질", "severity": "mid", "from": 1, "signs": "발작", "care": "발작 기록" },
+        { "cond": "외이염", "severity": "high", "from": 0, "signs": "귀 냄새, 흔들기", "care": "주 1회 귀 세정" },
+        { "cond": "갑상선 기능 저하증", "severity": "mid", "from": 5, "signs": "무기력, 탈모", "care": "호르몬 검사" }
+      ]},
+    { "name": "스피츠", "size": "small", "lifespan": [12, 16],
+      "risks": [
+        { "cond": "슬개골 탈구", "severity": "high", "from": 0, "signs": "스킵 보행", "care": "미끄럼 방지" },
+        { "cond": "기관 허탈", "severity": "mid", "from": 5, "signs": "마른 기침", "care": "하네스" },
+        { "cond": "치주 질환", "severity": "mid", "from": 3, "signs": "치석", "care": "양치" },
+        { "cond": "피부 알러지", "severity": "mid", "from": 1, "signs": "가려움", "care": "환경 관리" }
+      ]},
+    { "name": "사모예드", "size": "large", "lifespan": [12, 14],
+      "risks": [
+        { "cond": "고관절 이형성", "severity": "high", "from": 1, "signs": "보행 이상", "care": "체중·운동 관리" },
+        { "cond": "당뇨병", "severity": "mid", "from": 5, "signs": "다음다뇨", "care": "혈당 검사" },
+        { "cond": "사모예드 유전성 사구체병증", "severity": "mid", "from": 1, "signs": "단백뇨, 신부전", "care": "정기 소변검사" },
+        { "cond": "열사병", "severity": "high", "from": 0, "signs": "이중모로 여름 취약", "care": "여름 실내 냉방" }
+      ]},
+    { "name": "믹스견 / 기타", "size": "medium", "lifespan": [12, 15],
+      "risks": [
+        { "cond": "치주 질환", "severity": "high", "from": 2, "signs": "입냄새, 치석", "care": "매일 양치, 연 1회 검진" },
+        { "cond": "비만", "severity": "high", "from": 1, "signs": "허리 라인 소실", "care": "칼로리 계산 급여" },
+        { "cond": "심장·신장 노령성 변화", "severity": "mid", "from": 7, "signs": "기침, 다음다뇨", "care": "6개월마다 노령 검진" },
+        { "cond": "관절염", "severity": "mid", "from": 7, "signs": "산책 기피, 일어설 때 뻣뻣함", "care": "관절 보조제, 저충격 운동" }
+      ]}
+  ],
+  "ageStages": [
+    { "key": "puppy", "label": "퍼피", "from": 0, "to": 1,
+      "checks": ["기초 예방접종 5차 + 광견병 완료", "사회화 훈련 (생후 3~16주 골든타임)", "구충 4주 간격 반복", "저혈당 주의 (소형견)", "중성화 시기 수의사 상담"] },
+    { "key": "adult", "label": "성견", "from": 1, "to": 7,
+      "checks": ["연 1회 종합 건강검진 + 혈액검사", "심장사상충 예방 매월", "치석 관리 및 스케일링 상담", "적정 체중 유지 (BCS 4~5/9)", "종합백신 추가 접종 주기 확인"] },
+    { "key": "senior", "label": "노령견", "from": 7, "to": 11,
+      "checks": ["6개월마다 건강검진 (혈액·소변·엑스레이)", "심장 초음파 연 1회", "관절 보조제 시작 검토", "체중 급변 시 즉시 진료", "치과 상태 정기 확인"] },
+    { "key": "geriatric", "label": "초고령견", "from": 11, "to": 30,
+      "checks": ["3~6개월마다 검진", "신장 수치(SDMA) 추적", "인지 기능 저하(치매) 관찰", "혈압 측정", "통증 관리 및 삶의 질 평가"] }
+  ]
+}

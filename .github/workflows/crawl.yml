@@ -1,0 +1,33 @@
+name: 용품 데이터 수집
+
+on:
+  schedule:
+    - cron: '0 18 * * 0'   # 매주 월요일 03:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 수집 실행
+        run: node tools/crawl.mjs
+
+      - name: 변경사항 커밋
+        run: |
+          if git diff --quiet -- data/products.json; then
+            echo "변경 없음 — 커밋을 건너뜁니다."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/products.json
+          git commit -m "chore: 용품 가격·평점 데이터 자동 갱신"
+          git push

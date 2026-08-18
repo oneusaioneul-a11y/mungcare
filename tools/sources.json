@@ -1,0 +1,11 @@
+{
+  "_comment": [
+    "크롤링 대상 목록입니다. 비어 있으면 크롤러는 아무 것도 수집하지 않고 정상 종료합니다.",
+    "항목을 추가하기 전에 반드시 해당 사이트의 이용약관과 robots.txt를 확인하세요.",
+    "크롤러는 robots.txt를 존중하며, 페이지에 공개된 schema.org JSON-LD 구조화 데이터만 읽습니다.",
+    "id 는 data/products.json 의 items[].id 와 일치해야 갱신됩니다."
+  ],
+  "userAgent": "MungCareBot/1.0 (+https://github.com/OWNER/REPO; 반려견 용품 정보 수집)",
+  "delayMs": 1500,
+  "targets": []
+}
