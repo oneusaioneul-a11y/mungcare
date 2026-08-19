@@ -17,6 +17,7 @@ import allergy from './views/allergy.js';
 import risk from './views/risk.js';
 import products from './views/products.js';
 import community from './views/community.js';
+import adopt from './views/adopt.js';
 import settingsView from './views/settings.js';
 
 export const DB = { breeds: null, vaccines: null, products: null };
@@ -25,7 +26,7 @@ const ROUTES = {
   '/': dashboard, '/profile': profile, '/diet': diet, '/recipes': recipes,
   '/meds': meds, '/walk': walk, '/vaccine': vaccine, '/medical': medical,
   '/allergy': allergy, '/risk': risk, '/products': products,
-  '/community': community, '/settings': settingsView
+  '/community': community, '/adopt': adopt, '/settings': settingsView
 };
 
 const NAV = [
@@ -45,6 +46,7 @@ const NAV = [
   { group: '같이 나눠요' },
   { to: '/products', ico: ICONS.cart, label: '용품 리뷰' },
   { to: '/community', ico: ICONS.chat, label: '수다방' },
+  { to: '/adopt', ico: ICONS.heart, label: '유기견 입양' },
   { group: '' },
   { to: '/settings', ico: ICONS.gear, label: '설정' }
 ];

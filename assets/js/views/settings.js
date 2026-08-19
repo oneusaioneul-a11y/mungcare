@@ -76,6 +76,15 @@ export default {
       </div>`}
 
       <div class="card">
+        <div class="card-head"><h2>📡 공공데이터 연결</h2><div class="spacer"></div>
+          <button class="btn btn-sm" data-gov-check>지금 확인하기</button></div>
+        <p style="font-size:13px;color:var(--ink-2);line-height:1.65;margin:0 0 10px">
+          유기견 입양 정보는 <b>농림축산검역본부 동물보호관리시스템</b>(공공데이터포털)에서 실시간으로 가져와요.
+          서비스키는 서버에만 두고, 브라우저는 우리 서버를 거쳐서 부릅니다.</p>
+        <div id="gov-status" style="font-size:13px;color:var(--ink-3)">확인 버튼을 눌러보세요.</div>
+      </div>
+
+      <div class="card">
         <div class="card-head"><h2>🗺️ 앞으로 이런 것도 만들 거예요</h2></div>
         <div class="grid g2" style="gap:9px">
           ${[['🏥 병원 기록 자동으로', '명세서 사진만 찍으면 알아서 들어가게'],
@@ -146,6 +155,29 @@ export default {
           ? '등록한 아이와 밥·약·산책·병원 기록이 서버에서 전부 사라지고 로그아웃돼요. 되돌릴 수 없는데, 정말 지울까요?'
           : '계정이랑 우리 아이 기록이 전부 사라져요. 되돌릴 수 없는데, 정말 지울까요?',
         async () => { await backup.wipeAccount(); toast('지웠어요.'); location.hash = '#/'; }));
+
+    root.querySelector('[data-gov-check]')?.addEventListener('click', async e => {
+      const box = root.querySelector('#gov-status');
+      e.target.disabled = true; box.textContent = '확인하는 중이에요…';
+      try {
+        const G = await import('../gov.js');
+        const s2 = await G.status();
+        const live = s2.liveServices || [];
+        box.innerHTML = `
+          <div class="alert ${live.length ? 'ok' : 'warn'}" style="margin-bottom:10px">
+            <span class="ai">${live.length ? '✅' : '⏳'}</span>
+            <span>${live.length
+              ? `<b>연결됐어요!</b> 열려 있는 서비스: ${esc(live.join(', '))}`
+              : `<b>아직 열리지 않았어요.</b><br><span style="opacity:.85">${esc(s2.hint || '')}</span>`}</span></div>
+          <div class="tbl-wrap"><table><thead><tr><th>서비스</th><th>상태</th><th>메시지</th></tr></thead><tbody>
+          ${(s2.checks || []).map(c => `<tr><td>${esc(c.name)}</td>
+            <td>${c.ok ? '<span class="chip ok">정상</span>' : `<span class="chip bad">코드 ${esc(c.code || '?')}</span>`}</td>
+            <td style="color:var(--ink-3)">${esc(c.message || (c.ok ? c.totalCount + '건' : ''))}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      } catch {
+        box.textContent = '확인하지 못했어요. 잠시 후 다시 시도해주세요.';
+      } finally { e.target.disabled = false; }
+    });
 
     root.querySelector('[data-giscus-save]')?.addEventListener('click', () => {
       const g = {

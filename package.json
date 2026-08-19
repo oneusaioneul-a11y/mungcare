@@ -1,0 +1,13 @@
+{
+  "name": "mungcare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "반려견 통합 건강 관리",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node tools/test.mjs",
+    "start": "./serve.sh",
+    "deploy": "./deploy.sh"
+  }
+}
