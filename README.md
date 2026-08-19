@@ -39,15 +39,38 @@ node tools/icons-preview.mjs   # icons-preview.html 생성 → 로컬 서버로 
 
 ## 배포
 
+### 운영 주소 — Vercel
+
+**<https://mungcare.vercel.app>**
+
+```bash
+./deploy.sh            # 검사 → 운영 배포 → 실제 접속 확인까지 한 번에
+./deploy.sh preview    # 미리보기 배포 (운영 주소는 그대로)
+```
+
+`deploy.sh` 는 배포 전에 전체 JS 문법 검사와 로직 테스트(34종)를 돌리고,
+배포 후에는 실제로 사이트에 접속해 index와 주요 자산이 200으로 응답하는지까지 확인합니다.
+하나라도 실패하면 0이 아닌 코드로 종료합니다.
+
+설정은 `vercel.json` 에 있습니다. 빌드 없이 정적 파일을 그대로 서빙하고,
+`data/*.json` 은 크롤러가 갱신하므로 캐시를 두지 않습니다.
+`.vercelignore` 로 `tools/`, `.github/`, `README.md` 등은 배포에서 제외합니다.
+
+> GitHub 저장소와 연결한 자동 배포(push하면 자동 반영)를 쓰려면, Vercel 계정에
+> GitHub Login Connection을 추가한 뒤 프로젝트 설정에서 저장소를 연결하세요.
+> 지금은 CLI 배포만 설정돼 있습니다.
+
+### GitHub Pages (보조)
+
 `main` 브랜치에 push하면 `.github/workflows/deploy.yml`이 GitHub Pages로 배포합니다.
 저장소 **Settings → Pages → Source** 를 **GitHub Actions** 로 설정하세요.
 
 배포 워크플로에는 `verify` 잡이 붙어 있어, 배포 후 실제 사이트에 접속해
 HTTP 상태 · 주요 자산 · JS MIME 타입을 검사합니다. 게시에 실패하면 워크플로가 실패로 표시됩니다.
 
-현재 배포 주소: <https://redreta.github.io/mungcare/>
+GitHub Pages 주소: <https://redreta.github.io/mungcare/>
 
-### ⚠️ 일부 네트워크에서 GitHub Pages 접속이 차단될 수 있습니다
+#### ⚠️ 일부 네트워크에서 GitHub Pages 접속이 차단될 수 있습니다
 
 GitHub Pages는 `185.199.108~111.153` 대역에서 서비스됩니다. 일부 국내 회선에서 이 대역이
 차단되어 있어, **DNS는 정상 해석되지만 TCP 연결이 타임아웃**되는 경우가 있습니다.
@@ -61,11 +84,8 @@ curl -I --max-time 10 https://redreta.github.io/mungcare/
 curl -I --max-time 10 https://github.github.io/      # 이것도 실패하면 회선 차단
 ```
 
-이 경우 사이트나 배포에는 문제가 없습니다. 해결 방법:
-
-- 다른 회선(휴대폰 LTE 등)에서 접속
-- 또는 차단되지 않는 호스트로 이전 — Cloudflare Pages(`*.pages.dev`), Netlify, Vercel 모두
-  같은 저장소를 연결해 push마다 자동 배포할 수 있으며, 빌드 설정 없이 정적 파일을 그대로 서빙하면 됩니다.
+이 경우 사이트나 배포에는 문제가 없습니다. **이 문제 때문에 운영 주소를 Vercel로 옮겼습니다.**
+GitHub Pages 배포는 백업 용도로 그대로 두었습니다.
 
 ## 용품 데이터 자동 수집
 
@@ -134,6 +154,8 @@ GitHub Pages는 **정적 호스팅**이라 서버와 데이터베이스가 없�
 ```
 index.html
 serve.sh                 로컬 실행 스크립트
+deploy.sh                Vercel 배포 + 접속 검증 스크립트
+vercel.json              정적 서빙 · 캐시 · 보안 헤더 설정
 assets/
   css/app.css            디자인 시스템 (라이트/다크, S-Core Dream 웹폰트)
   js/
