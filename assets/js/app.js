@@ -80,7 +80,31 @@ export function navigate(hash) { location.hash = hash; }
 
 export function render() {
   if (rendering) return; rendering = true;
-  try { paint(); } finally { rendering = false; }
+  try {
+    paint();
+  } catch (err) {
+    console.error('화면을 그리는 중 오류가 발생했습니다.', err);
+    showFatal(err);
+  } finally { rendering = false; }
+}
+
+/** 렌더가 실패해도 흰 화면/무한 로딩으로 남지 않도록 오류를 화면에 드러냅니다. */
+function showFatal(err) {
+  const root = app();
+  if (!root) return;
+  root.innerHTML = `
+    <div style="min-height:100vh;display:grid;place-items:center;padding:24px">
+      <div style="max-width:620px;background:var(--surface,#fff);border:1px solid var(--line,#e6e0d6);
+                  border-radius:14px;padding:22px 24px">
+        <div style="font-size:30px;margin-bottom:8px">⚠️</div>
+        <h1 style="margin:0 0 8px;font-size:17px">화면을 표시하지 못했습니다</h1>
+        <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--ink-2,#5c5348)">
+          아래 오류 내용을 알려주시면 바로 고치겠습니다. 저장된 기록은 그대로 남아 있습니다.</p>
+        <pre style="margin:0 0 14px;background:var(--surface-2,#f2efe9);border-radius:9px;padding:12px 14px;
+                    font-size:12.5px;overflow-x:auto;white-space:pre-wrap">${esc(err?.stack || err?.message || String(err))}</pre>
+        <button class="btn" onclick="location.hash='#/';location.reload()">처음 화면으로 새로고침</button>
+      </div>
+    </div>`;
 }
 
 function paint() {
@@ -171,7 +195,9 @@ function dogSwitcher(ctx) {
 }
 
 function applyTheme() {
-  const t = auth.current() ? (settings.get('theme') || 'light') : (localStorage.getItem('bc.theme') || 'light');
+  let fallback = 'light';
+  try { fallback = localStorage.getItem('bc.theme') || 'light'; } catch { /* 저장소 차단 환경 */ }
+  const t = auth.current() ? (settings.get('theme') || 'light') : fallback;
   document.documentElement.setAttribute('data-theme', t);
 }
 
@@ -182,12 +208,17 @@ async function loadJSON(path) {
 }
 
 (async function boot() {
-  const [b, v, p] = await Promise.all([
-    loadJSON('data/breeds.json'), loadJSON('data/vaccines.json'), loadJSON('data/products.json')
-  ]);
-  DB.breeds = b; DB.vaccines = v; DB.products = p;
-  if (!b || !v) toast('기준 데이터를 불러오지 못했습니다. 새로고침해 주세요.', 4000);
-  subscribe(() => render());
-  window.addEventListener('hashchange', render);
-  render();
+  try {
+    const [b, v, p] = await Promise.all([
+      loadJSON('data/breeds.json'), loadJSON('data/vaccines.json'), loadJSON('data/products.json')
+    ]);
+    DB.breeds = b; DB.vaccines = v; DB.products = p;
+    subscribe(() => render());
+    window.addEventListener('hashchange', render);
+    render();
+    if (!b || !v) toast('기준 데이터를 불러오지 못했습니다. 새로고침해 주세요.', 4000);
+  } catch (err) {
+    console.error('앱을 시작하지 못했습니다.', err);
+    showFatal(err);
+  }
 })();

@@ -9,20 +9,80 @@
 <meta property="og:title" content="멍케어 · 반려견 통합 건강 관리">
 <meta property="og:description" content="견종·연령별 질환 알림, 예방접종 자동 스케줄, 식단 칼로리 계산, 용품 리뷰 커뮤니티">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐕</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%95%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
   <div id="app">
-    <div style="min-height:100vh;display:grid;place-items:center;color:#8d8377;font-size:14px">
-      <div style="text-align:center">
+    <div id="boot" style="min-height:100vh;display:grid;place-items:center;padding:24px;color:#8d8377;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif">
+      <div style="text-align:center;max-width:560px">
         <div style="font-size:38px;margin-bottom:10px">🐕</div>
-        불러오는 중…
+        <div id="boot-msg">불러오는 중…</div>
         <noscript><div style="margin-top:14px;color:#b23b34">이 서비스를 사용하려면 자바스크립트를 켜주세요.</div></noscript>
       </div>
     </div>
   </div>
   <div id="toasts"></div>
+
+  <!-- 부팅 실패를 조용히 넘기지 않고 화면에 드러냅니다 -->
+  <script>
+  (function () {
+    var slot = document.getElementById('boot');
+    var shown = false;
+
+    function panel(title, body, hint) {
+      if (shown) return; shown = true;
+      slot.innerHTML =
+        '<div style="max-width:620px;text-align:left;background:#fff;border:1px solid #e6e0d6;border-radius:14px;padding:22px 24px;box-shadow:0 8px 24px -12px rgba(36,31,26,.25)">' +
+        '<div style="font-size:30px;margin-bottom:8px">⚠️</div>' +
+        '<h1 style="margin:0 0 8px;font-size:17px;color:#241f1a">' + title + '</h1>' +
+        '<p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:#5c5348">' + body + '</p>' +
+        (hint ? '<pre style="margin:0;background:#f2efe9;border-radius:9px;padding:12px 14px;font-size:12.5px;overflow-x:auto;color:#241f1a">' + hint + '</pre>' : '') +
+        '</div>';
+    }
+
+    // 1) file:// 로 직접 열면 ES 모듈이 CORS로 차단되어 아무 것도 실행되지 않습니다.
+    if (location.protocol === 'file:') {
+      panel('로컬 파일로 직접 열어서 실행할 수 없습니다',
+        '이 사이트는 ES 모듈과 fetch를 사용하기 때문에 <b>file://</b> 로 열면 브라우저 보안 정책(CORS)에 막혀 화면이 멈춥니다. ' +
+        '배포된 주소로 접속하시거나, 아래 명령으로 로컬 서버를 띄운 뒤 <b>http://localhost:8080</b> 으로 열어주세요.',
+        'cd ' + '"프로젝트 폴더"' + '\npython3 -m http.server 8080');
+      return;
+    }
+
+    // 2) 모듈 로드 자체가 실패한 경우
+    window.addEventListener('error', function (e) {
+      if (e.target && e.target.tagName === 'SCRIPT') {
+        panel('앱 스크립트를 불러오지 못했습니다',
+          '<b>' + (e.target.src || 'assets/js/app.js') + '</b> 를 불러오는 데 실패했습니다. ' +
+          '새로고침(⌘+Shift+R)해도 같다면 네트워크 차단이나 배포 누락일 수 있습니다.');
+        return;
+      }
+      if (e.message) {
+        panel('실행 중 오류가 발생했습니다',
+          '아래 내용을 그대로 알려주시면 원인을 찾을 수 있습니다.',
+          (e.message || '') + '\n' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || ''));
+      }
+    }, true);
+
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e.reason;
+      panel('데이터를 불러오지 못했습니다',
+        '앱 실행 중 처리되지 않은 오류가 발생했습니다. 아래 내용을 알려주세요.',
+        (r && (r.stack || r.message)) || String(r));
+    });
+
+    // 3) 일정 시간이 지나도 앱이 그려지지 않으면 안내
+    setTimeout(function () {
+      if (document.getElementById('boot') && !shown) {
+        panel('화면을 그리지 못하고 있습니다',
+          '스크립트는 실행됐지만 앱이 준비되지 않았습니다. 브라우저 개발자 도구(⌥⌘I) → Console 탭의 붉은 오류 메시지를 알려주시면 바로 고치겠습니다. ' +
+          '브라우저가 오래된 버전이라면 최신 Chrome / Safari / Edge 로 열어봐 주세요.');
+      }
+    }, 8000);
+  })();
+  </script>
+
   <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

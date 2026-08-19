@@ -28,3 +28,52 @@ jobs:
           path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: 배포된 사이트 실제 접속 확인
+        env:
+          URL: ${{ needs.deploy.outputs.page_url || 'https://redreta.github.io/mungcare/' }}
+        run: |
+          BASE="${URL%/}"
+          echo "확인 대상: $BASE"
+          fail=0
+
+          # CDN 반영까지 최대 2분 재시도
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /tmp/index.html -w '%{http_code}' "$BASE/")
+            echo "  시도 $i · HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "::error::사이트가 응답하지 않습니다 (HTTP $code)"
+            exit 1
+          fi
+
+          if grep -q "There isn't a GitHub Pages site here" /tmp/index.html; then
+            echo "::error::GitHub Pages 404 페이지가 반환되었습니다 — 사이트가 게시되지 않았습니다"
+            exit 1
+          fi
+
+          grep -q "멍케어" /tmp/index.html \
+            && echo "  ✓ index.html 정상 (제목 확인)" \
+            || { echo "::error::index.html 내용이 예상과 다릅니다"; fail=1; }
+
+          for p in assets/js/app.js assets/js/store.js assets/js/health.js assets/js/ui.js \
+                   assets/css/app.css data/breeds.json data/vaccines.json data/products.json \
+                   assets/js/views/dashboard.js assets/js/views/auth.js; do
+            c=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/$p")
+            if [ "$c" = "200" ]; then echo "  ✓ $p"; else echo "::error::$p → HTTP $c"; fail=1; fi
+          done
+
+          ct=$(curl -s -o /dev/null -w '%{content_type}' "$BASE/assets/js/app.js")
+          case "$ct" in
+            *javascript*) echo "  ✓ JS MIME 타입 정상 ($ct)" ;;
+            *) echo "::error::JS가 잘못된 MIME 타입으로 서빙됩니다 ($ct) — 모듈 로드가 차단됩니다"; fail=1 ;;
+          esac
+
+          exit $fail
