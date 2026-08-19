@@ -19,7 +19,7 @@
   --warn:#a8751a; --warn-soft:#fbf1dc;
   --bad:#b23b34; --bad-soft:#fbe9e7;
   --info:#3a6ea5; --info-soft:#e8f0f8;
-  --radius:14px; --radius-sm:9px;
+  --radius:20px; --radius-sm:13px;
   --shadow:0 1px 2px rgba(36,31,26,.06),0 8px 24px -12px rgba(36,31,26,.18);
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
   --sans:'Escoredream',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,"Noto Sans KR",sans-serif;
@@ -299,3 +299,141 @@ tr:last-child td{border-bottom:0}
   .scrim{position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50}
 }
 @media (max-width:480px){ .g4{grid-template-columns:1fr} }
+
+
+/* ══════════════════════════════════════════════════════════
+   두들 레이어 — 손그림 느낌의 장식과 아이콘
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 발자국 배경 ── */
+body{
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='%23b4622d' fill-opacity='.045'%3E%3Cellipse cx='18' cy='26' rx='4.6' ry='5.6'/%3E%3Cellipse cx='10.6' cy='19.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='17' cy='15.4' rx='2.5' ry='3.1'/%3E%3Cellipse cx='23.4' cy='16.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='62' cy='66' rx='4.6' ry='5.6'/%3E%3Cellipse cx='54.6' cy='59.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='61' cy='55.4' rx='2.5' ry='3.1'/%3E%3Cellipse cx='67.4' cy='56.6' rx='2.5' ry='3.1'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment:fixed;
+}
+[data-theme="dark"] body{
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='%23e0894f' fill-opacity='.05'%3E%3Cellipse cx='18' cy='26' rx='4.6' ry='5.6'/%3E%3Cellipse cx='10.6' cy='19.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='17' cy='15.4' rx='2.5' ry='3.1'/%3E%3Cellipse cx='23.4' cy='16.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='62' cy='66' rx='4.6' ry='5.6'/%3E%3Cellipse cx='54.6' cy='59.6' rx='2.5' ry='3.1'/%3E%3Cellipse cx='61' cy='55.4' rx='2.5' ry='3.1'/%3E%3Cellipse cx='67.4' cy='56.6' rx='2.5' ry='3.1'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── 아이콘 ── */
+.di{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em}
+.dg{display:block;flex:none}
+.nav .ico{display:grid;place-items:center;width:22px;height:22px;font-size:0}
+.nav .ico .di{width:19px;height:19px;stroke-width:1.9}
+.nav a.active .ico{color:var(--brand-ink)}
+.card-head h2 .di,.card-head .hd-ico{width:19px;height:19px;color:var(--brand);flex:none}
+.card-head h2{display:flex;align-items:center;gap:7px}
+
+/* ── 손그림 카드: 이중 테두리 + 살짝 기울어진 스티커 느낌 ── */
+.card{
+  border-width:2px;
+  box-shadow:
+    3px 3px 0 -1px var(--line),
+    0 1px 2px rgba(36,31,26,.05),
+    0 10px 26px -16px rgba(36,31,26,.22);
+}
+[data-theme="dark"] .card{box-shadow:3px 3px 0 -1px var(--line),0 10px 26px -14px rgba(0,0,0,.65)}
+.stat{border-width:2px;box-shadow:2px 2px 0 -1px var(--line)}
+.prod,.post{border-width:2px;box-shadow:3px 3px 0 -1px var(--line)}
+
+/* ── 손그림 버튼 ── */
+.btn{border-width:2px;box-shadow:2px 2px 0 -1px var(--line-2);transition:transform .08s,box-shadow .08s,background .12s}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 -1px var(--line-2)}
+.btn:active{transform:translate(1px,1px);box-shadow:0 0 0 0 var(--line-2)}
+.btn-primary{box-shadow:2px 2px 0 -1px var(--brand-ink)}
+.btn-primary:hover{box-shadow:3px 3px 0 -1px var(--brand-ink)}
+.btn-ghost{box-shadow:none}
+.btn-ghost:hover{transform:none;box-shadow:none}
+
+/* ── 강아지 아바타 (두들) ── */
+.dogav{
+  display:grid;place-items:center;background:var(--brand-soft);
+  border:2px solid var(--line);flex:none;overflow:hidden;
+  border-radius:58% 42% 47% 53% / 55% 52% 48% 45%;
+}
+.dogav.sm{width:34px;height:34px}
+.dogav.md{width:52px;height:52px}
+.dogav.lg{width:84px;height:84px}
+.dogav.xl{width:116px;height:116px}
+.dogav svg{width:82%;height:82%}
+
+/* 견종 선택 그리드 */
+.breedpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:9px;max-height:262px;overflow-y:auto;padding:3px}
+.breedpick button{
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 5px;cursor:pointer;
+  background:var(--surface);border:2px solid var(--line);border-radius:var(--radius-sm);
+  font-size:11px;font-weight:600;color:var(--ink-2);line-height:1.3;text-align:center;
+}
+.breedpick button:hover{background:var(--surface-2);transform:translateY(-2px)}
+.breedpick button.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+.breedpick svg{width:42px;height:42px}
+
+/* ── 손그림 밑줄 · 구분선 ── */
+.squiggle{
+  height:7px;width:100%;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='7' viewBox='0 0 60 7'%3E%3Cpath d='M0 4.2c5-3.4 10-3.4 15 0s10 3.4 15 0 10-3.4 15 0 10 3.4 15 0' fill='none' stroke='%23b4622d' stroke-opacity='.34' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x center;
+}
+.dashed{border-top:2px dashed var(--line-2);margin:4px 0}
+
+/* ── 말풍선 ── */
+.bubble{
+  position:relative;background:var(--brand-soft);color:var(--brand-ink);
+  border:2px solid var(--line);border-radius:18px 18px 18px 5px;
+  padding:11px 14px;font-size:13px;line-height:1.6;
+}
+.bubble::after{
+  content:'';position:absolute;left:-2px;bottom:-9px;width:12px;height:11px;
+  background:var(--brand-soft);border-left:2px solid var(--line);border-bottom:2px solid var(--line);
+  border-radius:0 0 0 8px;
+}
+
+/* ── 빈 화면 두들 ── */
+.empty .em{display:flex;justify-content:center;align-items:center;margin-bottom:10px;font-size:32px;line-height:1}
+.empty .em svg{width:62px;height:62px}
+.empty .em .di{width:50px;height:50px;color:var(--line-2);stroke-width:1.6;opacity:1}
+
+/* ── 사이드바 로고 ── */
+.brand-mark{border-radius:56% 44% 48% 52% / 52% 50% 50% 48%;overflow:hidden;padding:3px}
+.brand-mark svg{width:100%;height:100%}
+
+/* ── 알림 카드도 손그림 ── */
+.alert{border-width:2px}
+
+/* ── 칩 ── */
+.chip{border-width:1.5px;border-style:solid;border-color:color-mix(in srgb,currentColor 22%,transparent)}
+
+/* ── 주간 차트 막대를 둥글게 ── */
+.weekchart .bar2{border-radius:9px 9px 4px 4px}
+.weekchart .bar2 > i{border-radius:9px 9px 4px 4px}
+
+/* ── 로그인 화면 두들 ── */
+.auth-hero{position:relative;overflow:hidden}
+.auth-hero::before{
+  content:'';position:absolute;inset:0;opacity:.13;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M20 30c4-6 12-6 16 0'/%3E%3Ccircle cx='92' cy='26' r='7'/%3E%3Cpath d='M84 88c6-8 18-8 24 0'/%3E%3Cpath d='M28 92h14M35 85v14'/%3E%3C/g%3E%3C/svg%3E") repeat;
+}
+.auth-hero > *{position:relative}
+.auth-feat{border-radius:16px}
+.hero-dogs{display:flex;gap:-10px;align-items:center;margin-bottom:2px}
+.hero-dogs .dogav{
+  border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.92);
+  width:60px;height:60px;margin-right:-12px;box-shadow:0 6px 16px -8px rgba(0,0,0,.5);
+}
+.hero-dogs .dogav:nth-child(even){transform:rotate(5deg)}
+.hero-dogs .dogav:nth-child(odd){transform:rotate(-5deg)}
+
+/* ── 리스트 아이템 아이콘 ── */
+.item .ic{
+  width:40px;height:40px;border-radius:52% 48% 45% 55% / 50% 52% 48% 50%;
+  background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--brand);
+}
+.item .ic .di{width:20px;height:20px}
+
+/* ── 타임라인 점을 발바닥으로 ── */
+.tl-item::before{border-radius:52% 48% 44% 56% / 50% 54% 46% 50%}
+
+@media (max-width:900px){
+  .breedpick{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}
+  .dogav.xl{width:96px;height:96px}
+}

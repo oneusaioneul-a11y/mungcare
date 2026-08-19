@@ -175,8 +175,8 @@ export function buildAlerts({ dog, vax, prev, meds, weights, allergies, walks })
 
   if (allergies?.length) {
     const sev = allergies.filter(x => x.severity === 'high');
-    if (sev.length) a.push({ level: 'bad', icon: '⚠️', title: '중증 알러지 등록됨',
-      body: sev.map(x => x.name).join(', ') + ' — 간식·사료 성분표를 반드시 확인하세요.', to: '#/allergy' });
+    if (sev.length) a.push({ level: 'bad', icon: '⚠️', title: '심한 알러지가 있는 아이예요',
+      body: sev.map(x => x.name).join(', ') + ' — 간식이나 사료 살 때 성분표 꼭 봐주세요!', to: '#/allergy' });
   }
 
   const w = [...(weights || [])].sort((x, y) => y.date.localeCompare(x.date));
@@ -185,13 +185,13 @@ export function buildAlerts({ dog, vax, prev, meds, weights, allergies, walks })
     const gap = daysBetween(w[1].date, w[0].date);
     if (Math.abs(diff) >= 10 && gap <= 90) a.push({ level: 'bad', icon: '⚖️',
       title: `체중이 ${gap}일 사이 ${diff > 0 ? '증가' : '감소'}`,
-      body: `${w[1].kg}kg → ${w[0].kg}kg. 급격한 변화는 진료가 필요할 수 있습니다.`,
+      body: `${w[1].kg}kg → ${w[0].kg}kg 이에요. 이렇게 갑자기 바뀌면 한 번 진료받아보시는 게 좋아요.`,
       amt: `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%`, to: '#/profile' });
   }
 
   const last7 = (walks || []).filter(x => daysBetween(x.date, today()) < 7);
   if (!last7.length && (walks || []).length) a.push({ level: 'warn', icon: '🐾',
-    title: '최근 7일 산책 기록 없음', body: '규칙적인 산책은 관절·체중·스트레스 관리의 기본입니다.', to: '#/walk' });
+    title: '일주일째 산책 기록이 없어요', body: '산책은 관절이랑 체중, 스트레스 관리의 기본이에요. 짧게라도 나가볼까요?', to: '#/walk' });
 
   const order = { bad: 0, warn: 1, info: 2, ok: 3 };
   return a.sort((x, y) => order[x.level] - order[y.level]);

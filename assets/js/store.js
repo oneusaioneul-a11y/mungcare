@@ -31,7 +31,7 @@ function persist() {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch (e) {
-    alert('저장 공간이 부족합니다. [설정 → 데이터 내보내기]로 백업 후 정리해 주세요.');
+    alert('저장 공간이 꽉 찼어요. [설정 → 파일로 저장하기]로 백업하신 뒤 정리해주세요!');
   }
   listeners.forEach(fn => fn(state));
 }
@@ -61,10 +61,10 @@ export const auth = {
   async signup({ email, password, nick }) {
     email = String(email || '').trim().toLowerCase();
     nick = String(nick || '').trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('이메일 형식을 확인해 주세요.');
-    if (!nick) throw new Error('닉네임을 입력해 주세요.');
-    if (String(password).length < 8) throw new Error('비밀번호는 8자 이상이어야 합니다.');
-    if (state.users[email]) throw new Error('이미 가입된 이메일입니다.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('이메일 주소를 다시 한 번 봐주세요!');
+    if (!nick) throw new Error('뭐라고 불러드릴까요? 닉네임을 적어주세요');
+    if (String(password).length < 8) throw new Error('비밀번호는 8자 이상으로 해주세요');
+    if (state.users[email]) throw new Error('이미 가입된 이메일이에요');
 
     const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     const hash = await hashPw(password, salt);
@@ -79,9 +79,9 @@ export const auth = {
   async login({ email, password }) {
     email = String(email || '').trim().toLowerCase();
     const u = state.users[email];
-    if (!u) throw new Error('가입되지 않은 이메일이거나 비밀번호가 올바르지 않습니다.');
+    if (!u) throw new Error('이메일이나 비밀번호가 맞지 않아요');
     const hash = await hashPw(password, u.salt, u.iter || ITER);
-    if (hash !== u.hash) throw new Error('가입되지 않은 이메일이거나 비밀번호가 올바르지 않습니다.');
+    if (hash !== u.hash) throw new Error('이메일이나 비밀번호가 맞지 않아요');
     state.session = u.id;
     if (!state.data[u.id]) state.data[u.id] = { dogs: [], col: {}, settings: {} };
     persist();
@@ -92,17 +92,17 @@ export const auth = {
 
   updateNick(nick) {
     const u = this.current();
-    if (!u) throw new Error('로그인이 필요합니다.');
+    if (!u) throw new Error('먼저 로그인해주세요!');
     nick = String(nick || '').trim();
-    if (!nick) throw new Error('닉네임을 입력해 주세요.');
+    if (!nick) throw new Error('뭐라고 불러드릴까요? 닉네임을 적어주세요');
     u.nick = nick; persist();
   },
 
   async changePassword(oldPw, newPw) {
     const u = this.current();
-    if (!u) throw new Error('로그인이 필요합니다.');
-    if (await hashPw(oldPw, u.salt, u.iter || ITER) !== u.hash) throw new Error('현재 비밀번호가 일치하지 않습니다.');
-    if (String(newPw).length < 8) throw new Error('새 비밀번호는 8자 이상이어야 합니다.');
+    if (!u) throw new Error('먼저 로그인해주세요!');
+    if (await hashPw(oldPw, u.salt, u.iter || ITER) !== u.hash) throw new Error('지금 비밀번호가 맞지 않아요');
+    if (String(newPw).length < 8) throw new Error('새 비밀번호는 8자 이상으로 해주세요');
     u.salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     u.hash = await hashPw(newPw, u.salt);
     u.iter = ITER;
@@ -135,7 +135,7 @@ export const dogs = {
   },
   setActive(id) { settings.set('activeDog', id); },
   add(dog) {
-    const m = mine(); if (!m) throw new Error('로그인이 필요합니다.');
+    const m = mine(); if (!m) throw new Error('먼저 로그인해주세요!');
     const d = { id: uid('dog'), createdAt: new Date().toISOString(), ...dog };
     m.dogs.push(d);
     m.col[d.id] = { meals: [], meds: [], walks: [], vaccines: [], medical: [], allergies: [], recipes: [], weights: [] };
@@ -190,7 +190,7 @@ export const community = {
   },
   get(id) { return (state.community.posts || []).find(p => p.id === id) || null; },
   post({ kind, title, body, tags = [], productId = null }) {
-    const u = auth.current(); if (!u) throw new Error('로그인이 필요합니다.');
+    const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
     const p = {
       id: uid('post'), kind, title, body, tags, productId,
       author: u.nick, authorId: u.id, createdAt: new Date().toISOString(),
@@ -223,7 +223,7 @@ export const community = {
   /* 제품 평가 */
   reviews(productId) { return (state.community.reviews?.[productId] || []); },
   review(productId, { stars, body }) {
-    const u = auth.current(); if (!u) throw new Error('로그인이 필요합니다.');
+    const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
     const bucket = ((state.community.reviews ||= {})[productId] ||= []);
     const existing = bucket.find(r => r.authorId === u.id);
     if (existing) Object.assign(existing, { stars, body, updatedAt: new Date().toISOString() });
@@ -251,10 +251,10 @@ export const backup = {
     }, null, 2);
   },
   import(json) {
-    const u = auth.current(); if (!u) throw new Error('로그인이 필요합니다.');
+    const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
     const parsed = JSON.parse(json);
-    if (parsed.kind !== 'blancchou-backup') throw new Error('이 사이트의 백업 파일이 아닙니다.');
-    if (!parsed.data?.dogs) throw new Error('백업 파일에 반려견 데이터가 없습니다.');
+    if (parsed.kind !== 'blancchou-backup') throw new Error('멍케어 백업 파일이 아닌 것 같아요');
+    if (!parsed.data?.dogs) throw new Error('백업 파일에 아이 정보가 없네요');
     state.data[u.id] = parsed.data;
     persist();
   },

@@ -85,7 +85,7 @@ export function modal({ title, body, submitLabel = '저장', cancelLabel = '취�
     try {
       const r = await onSubmit?.(fd, bg);
       if (r !== false) closeModal();
-    } catch (err) { toast(err.message || '저장에 실패했습니다.'); }
+    } catch (err) { toast(err.message || '저장이 안 됐어요. 다시 해볼까요?'); }
   });
   setTimeout(() => bg.querySelector('input,select,textarea')?.focus(), 40);
   return bg;

@@ -2,6 +2,7 @@
 import { auth, dogs, col, settings, subscribe } from './store.js';
 import { esc, toast, initials } from './ui.js';
 import * as H from './health.js';
+import { ICONS, dogIcon, iconKeyForBreed } from './icons.js';
 
 import authView from './views/auth.js';
 import dashboard from './views/dashboard.js';
@@ -28,24 +29,24 @@ const ROUTES = {
 };
 
 const NAV = [
-  { group: '건강 관리' },
-  { to: '/', ico: '🏠', label: '대시보드' },
-  { to: '/profile', ico: '🐶', label: '반려견 프로필' },
-  { to: '/risk', ico: '🩺', label: '견종·연령 위험 알림', alertKey: true },
-  { group: '일상 기록' },
-  { to: '/diet', ico: '🍚', label: '식단 관리' },
-  { to: '/recipes', ico: '👩‍🍳', label: '화식 레시피' },
-  { to: '/meds', ico: '💊', label: '약 관리' },
-  { to: '/walk', ico: '🐾', label: '산책 관리' },
-  { group: '의료 기록' },
-  { to: '/vaccine', ico: '💉', label: '예방접종 · 구충' },
-  { to: '/medical', ico: '🏥', label: '진료 기록' },
-  { to: '/allergy', ico: '⚠️', label: '알러지' },
-  { group: '커뮤니티' },
-  { to: '/products', ico: '🛒', label: '용품 리뷰' },
-  { to: '/community', ico: '💬', label: '이야기 나눔' },
+  { group: '우리 아이' },
+  { to: '/', ico: ICONS.home, label: '오늘 하루' },
+  { to: '/profile', ico: ICONS.dog, label: '아이 프로필' },
+  { to: '/risk', ico: ICONS.stethos, label: '이맘때 조심할 것', alertKey: true },
+  { group: '매일매일' },
+  { to: '/diet', ico: ICONS.bowl, label: '밥 기록' },
+  { to: '/recipes', ico: ICONS.chef, label: '화식 레시피' },
+  { to: '/meds', ico: ICONS.pill, label: '약 챙기기' },
+  { to: '/walk', ico: ICONS.paw, label: '산책 기록' },
+  { group: '병원 · 건강' },
+  { to: '/vaccine', ico: ICONS.syringe, label: '접종 · 구충' },
+  { to: '/medical', ico: ICONS.hospital, label: '진료 기록' },
+  { to: '/allergy', ico: ICONS.alert, label: '알러지' },
+  { group: '같이 나눠요' },
+  { to: '/products', ico: ICONS.cart, label: '용품 리뷰' },
+  { to: '/community', ico: ICONS.chat, label: '수다방' },
   { group: '' },
-  { to: '/settings', ico: '⚙️', label: '설정' }
+  { to: '/settings', ico: ICONS.gear, label: '설정' }
 ];
 
 /* ── 컨텍스트 ─────────────────────────────────────────── */
@@ -83,7 +84,7 @@ export function render() {
   try {
     paint();
   } catch (err) {
-    console.error('화면을 그리는 중 오류가 발생했습니다.', err);
+    console.error('화면을 그리는 중 오류가 났어요.', err);
     showFatal(err);
   } finally { rendering = false; }
 }
@@ -97,12 +98,12 @@ function showFatal(err) {
       <div style="max-width:620px;background:var(--surface,#fff);border:1px solid var(--line,#e6e0d6);
                   border-radius:14px;padding:22px 24px">
         <div style="font-size:30px;margin-bottom:8px">⚠️</div>
-        <h1 style="margin:0 0 8px;font-size:17px">화면을 표시하지 못했습니다</h1>
+        <h1 style="margin:0 0 8px;font-size:17px">화면을 못 그렸어요 😥</h1>
         <p style="margin:0 0 14px;font-size:13.5px;line-height:1.7;color:var(--ink-2,#5c5348)">
-          아래 오류 내용을 알려주시면 바로 고치겠습니다. 저장된 기록은 그대로 남아 있습니다.</p>
+          아래 내용을 알려주시면 바로 고칠게요. 그동안 쌓은 기록은 그대로 있으니 걱정 마세요!</p>
         <pre style="margin:0 0 14px;background:var(--surface-2,#f2efe9);border-radius:9px;padding:12px 14px;
                     font-size:12.5px;overflow-x:auto;white-space:pre-wrap">${esc(err?.stack || err?.message || String(err))}</pre>
-        <button class="btn" onclick="location.hash='#/';location.reload()">처음 화면으로 새로고침</button>
+        <button class="btn" onclick="location.hash='#/';location.reload()">처음부터 다시 열기</button>
       </div>
     </div>`;
 }
@@ -125,8 +126,8 @@ function paint() {
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-mark">🐕</div>
-        <div><div class="brand-name">멍케어</div><div class="brand-sub">반려견 통합 건강 관리</div></div>
+        <div class="brand-mark">${dogIcon('bichon', 34)}</div>
+        <div><div class="brand-name">멍케어</div><div class="brand-sub">우리 아이 건강 수첩</div></div>
       </div>
       ${dogSwitcher(ctx)}
       <nav class="nav">
@@ -143,7 +144,7 @@ function paint() {
           <div style="min-width:0"><div style="font-weight:600;font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis">${esc(user.nick)}</div>
           <div style="font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(user.email)}</div></div>
         </div>
-        <button class="btn btn-sm btn-block" data-logout>로그아웃</button>
+        <button class="btn btn-sm btn-block" data-logout>나가기</button>
       </div>
     </aside>
 
@@ -184,12 +185,12 @@ function paint() {
 }
 
 function dogSwitcher(ctx) {
-  if (!ctx.dogs.length) return `<a href="#/profile" class="btn btn-primary btn-sm btn-block">🐾 반려견 등록하기</a>`;
+  if (!ctx.dogs.length) return `<a href="#/profile" class="btn btn-primary btn-sm btn-block">우리 아이 소개하기</a>`;
   return `<div class="dogpick">
-    <div class="av">${ctx.dog?.emoji || '🐶'}</div>
+    <div class="dogav sm">${dogIcon(ctx.dog?.icon || iconKeyForBreed(ctx.dog?.breed), 30)}</div>
     <select data-dogpick>
       ${ctx.dogs.map(d => `<option value="${esc(d.id)}" ${d.id === ctx.dog?.id ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}
-      <option value="__new">+ 새 반려견 등록</option>
+      <option value="__new">+ 다른 아이 추가</option>
     </select>
   </div>`;
 }
@@ -216,9 +217,9 @@ async function loadJSON(path) {
     subscribe(() => render());
     window.addEventListener('hashchange', render);
     render();
-    if (!b || !v) toast('기준 데이터를 불러오지 못했습니다. 새로고침해 주세요.', 4000);
+    if (!b || !v) toast('기준 정보를 못 받아왔어요. 새로고침 한 번만 해주세요!', 4000);
   } catch (err) {
-    console.error('앱을 시작하지 못했습니다.', err);
+    console.error('앱을 시작하지 못했어요.', err);
     showFatal(err);
   }
 })();

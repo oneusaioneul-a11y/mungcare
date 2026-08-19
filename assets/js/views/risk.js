@@ -1,20 +1,21 @@
 /* 견종 · 연령대별 질환 위험 사전 알림 */
 import { esc, empty } from '../ui.js';
 import * as H from '../health.js';
+import { ICONS } from '../icons.js';
 
 const SEV = { high: { c: 'bad', l: '주의' }, mid: { c: 'warn', l: '관찰' }, low: { c: '', l: '참고' } };
 let browse = '';
 
 export default {
   head: ctx => ({
-    title: '견종 · 연령 위험 알림',
-    sub: ctx.risk?.breed ? `${ctx.risk.breed.name} · ${H.ageLabel(ctx.dog.birth)} 기준` : '견종과 생년월일을 등록하면 맞춤 알림이 표시됩니다'
+    title: '이맘때 조심할 것',
+    sub: ctx.risk?.breed ? `${ctx.risk.breed.name} · ${H.ageLabel(ctx.dog.birth)} 기준으로 봤어요` : '견종이랑 생일을 알려주시면 맞춤으로 챙겨드려요'
   }),
 
   mount(root, ctx) {
     const BR = ctx.DB.breeds;
-    if (!BR) { root.innerHTML = `<div class="card">${empty('⚠️', '견종 데이터를 불러오지 못했습니다.')}</div>`; return; }
-    if (!ctx.dog) { root.innerHTML = `<div class="card">${empty('🩺', '반려견을 먼저 등록해 주세요.', '<a class="btn btn-primary" href="#/profile">등록하기</a>')}</div>`; return; }
+    if (!BR) { root.innerHTML = `<div class="card">${empty(ICONS.alert, '견종 정보를 못 받아왔어요. 새로고침 해주실래요?')}</div>`; return; }
+    if (!ctx.dog) { root.innerHTML = `<div class="card">${empty(ICONS.stethos, '먼저 우리 아이를 소개해주세요!', '<a class="btn btn-primary" href="#/profile">소개하러 가기</a>')}</div>`; return; }
 
     const r = ctx.risk;
     const stage = r?.stage;
@@ -25,11 +26,11 @@ export default {
     root.innerHTML = `
     <div class="stack">
       ${!ctx.dog.birth ? `<div class="alert warn"><span class="ai">📅</span><span>
-        <b>생년월일이 없어 연령별 알림이 제한적입니다.</b><br>
-        <span style="opacity:.85"><a href="#/profile">프로필에서 생년월일을 등록</a>하면 지금 나이에 맞는 위험만 골라서 보여드립니다.</span></span></div>` : ''}
+        <b>생일을 몰라서 나이별 안내는 아직이에요.</b><br>
+        <span style="opacity:.85"><a href="#/profile">프로필에 생일만 적어주시면</a> 지금 나이에 맞는 것만 딱 골라서 보여드릴게요.</span></span></div>` : ''}
 
       ${stage ? `<div class="card">
-        <div class="card-head"><h2>📌 지금은 ‘${esc(stage.label)}’ 시기입니다</h2><div class="spacer"></div>
+        <div class="card-head"><h2>📌 지금은 ‘${esc(stage.label)}’ 시기예요</h2><div class="spacer"></div>
           <span class="chip brand">${H.ageLabel(ctx.dog.birth)}</span></div>
         <div class="grid g2" style="gap:9px">
           ${stage.checks.map(c => `<div class="row" style="gap:8px;align-items:flex-start;font-size:13px">
@@ -38,14 +39,14 @@ export default {
       </div>` : ''}
 
       <div class="card">
-        <div class="card-head"><h2>🩺 지금 특히 살펴야 할 질환</h2><div class="spacer"></div>
-          <span class="hint">${r?.breed ? esc(r.breed.name) : '견종 미등록'} 기준 ${r?.now?.length || 0}건</span></div>
+        <div class="card-head"><h2>🩺 요즘 눈여겨볼 것들</h2><div class="spacer"></div>
+          <span class="hint">${r?.breed ? esc(r.breed.name) : '견종 미등록'} 기준 ${r?.now?.length || 0}가지</span></div>
         ${r?.now?.length ? `<div class="stack" style="gap:11px">${r.now.map(x => riskCard(x)).join('')}</div>`
-          : empty('🍀', '현재 나이에 해당하는 특이 주의 항목이 없습니다.')}
+          : empty(ICONS.heart, '지금 나이엔 특별히 걱정할 게 없네요. 다행이에요!')}
       </div>
 
       ${r?.later?.length ? `<div class="card">
-        <div class="card-head"><h2>⏳ 앞으로 2년 내 주의가 필요해지는 질환</h2></div>
+        <div class="card-head"><h2>⏳ 2년 안에 슬슬 챙겨야 할 것들</h2></div>
         <div class="grid g2">${r.later.map(x => `
           <div style="border:1px dashed var(--line-2);border-radius:var(--radius-sm);padding:12px">
             <div class="row"><b style="font-size:13.5px;flex:1">${esc(x.cond)}</b>
@@ -55,7 +56,7 @@ export default {
       </div>` : ''}
 
       <div class="card">
-        <div class="card-head"><h2>📚 견종별 호발 질환 사전</h2><div class="spacer"></div>
+        <div class="card-head"><h2>📚 견종별로 자주 오는 질환들</h2><div class="spacer"></div>
           <select data-browse style="max-width:220px">
             ${BR.breeds.map(b => `<option value="${esc(b.name)}" ${b.name === bsel ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}
           </select></div>
@@ -66,7 +67,7 @@ export default {
             ${ageY != null && browsed.name === r?.breed?.name ? `<span class="chip brand">우리 아이 ${H.ageLabel(ctx.dog.birth)}</span>` : ''}
           </div>
           <div class="tbl-wrap"><table>
-            <thead><tr><th>질환</th><th>주의 시작</th><th>이런 신호를 보세요</th><th>예방·관리</th></tr></thead>
+            <thead><tr><th>질환</th><th>주의 시작</th><th>이런 신호가 보이면</th><th>이렇게 챙겨주세요</th></tr></thead>
             <tbody>${browsed.risks.map(x => `<tr>
               <td><b>${esc(x.cond)}</b><br><span class="chip ${SEV[x.severity].c}">${SEV[x.severity].l}</span></td>
               <td style="white-space:nowrap">${x.from === 0 ? '전 연령' : `${x.from}세~`}${x.to ? ` ${x.to}세` : ''}</td>
@@ -76,7 +77,7 @@ export default {
       </div>
 
       <div class="card">
-        <div class="card-head"><h2>🚑 이럴 땐 바로 병원으로</h2></div>
+        <div class="card-head"><h2>🚑 이럴 땐 바로 병원으로 가주세요</h2></div>
         <div class="grid g2" style="gap:9px">
           ${['호흡이 가쁘고 잇몸·혀가 창백하거나 푸르게 변할 때',
              '배가 팽팽하게 부풀고 헛구역질을 반복할 때 (위확장 염전 의심)',
@@ -91,8 +92,8 @@ export default {
         </div>
       </div>
 
-      <p class="disclaimer">${esc(BR.note)} 호발 질환은 “반드시 걸린다”는 뜻이 아니라 “같은 나이의 다른 견종보다 상대적으로 자주 보고된다”는 의미입니다.
-      불필요한 불안 대신, 정기 검진 항목을 정할 때 참고 자료로 활용하세요.</p>
+      <p class="disclaimer">${esc(BR.note)} “이 병에 꼭 걸린다”는 얘기가 절대 아니에요. 같은 나이 다른 견종보다 조금 더 자주 보인다는 뜻이라,
+      너무 걱정하지 마시고 검진 때 “이것도 한번 봐주세요” 하고 여쭤보는 용도로 쓰시면 딱 좋아요.</p>
     </div>`;
 
     root.querySelector('[data-browse]')?.addEventListener('change', e => { browse = e.target.value; this.mount(root, ctx); });
@@ -104,9 +105,9 @@ function riskCard(x) {
   return `<div style="border:1px solid var(--line);border-left:3px solid ${x.severity === 'high' ? 'var(--bad)' : x.severity === 'mid' ? 'var(--warn)' : 'var(--line-2)'};border-radius:var(--radius-sm);padding:14px">
     <div class="row"><b style="font-size:14.5px;flex:1">${esc(x.cond)}</b><span class="chip ${s.c}">${s.l}</span></div>
     <div class="grid g2" style="gap:10px;margin-top:10px">
-      <div><div style="font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:3px">이런 신호를 보세요</div>
+      <div><div style="font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:3px">이런 신호가 보이면</div>
         <div style="font-size:13px;color:var(--ink-2)">${esc(x.signs)}</div></div>
-      <div><div style="font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:3px">예방 · 관리</div>
+      <div><div style="font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:3px">이렇게 챙겨주세요</div>
         <div style="font-size:13px;color:var(--ink-2)">${esc(x.care)}</div></div>
     </div>
   </div>`;
