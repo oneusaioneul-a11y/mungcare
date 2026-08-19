@@ -1,0 +1,80 @@
+# 서버 연결하기 (10분)
+
+Supabase 프로젝트를 하나 만들고 값 두 개만 채우면 정식 회원가입과 기기 간 동기화가 켜집니다.
+설정 전에는 예전처럼 이 브라우저에만 저장되는 모드로 동작하니, 중간에 사이트가 멈추지는 않아요.
+
+## 1. 프로젝트 만들기
+
+1. <https://supabase.com> 가입 (GitHub 계정으로 바로 됩니다)
+2. **New project** → 이름 `mungcare`, 리전은 **Northeast Asia (Seoul)** 을 고르세요
+3. Database Password 는 아무거나 정하고 따로 적어두세요 (앱에서는 안 씁니다)
+4. 프로젝트가 준비될 때까지 1~2분 기다립니다
+
+## 2. 테이블 만들기
+
+1. 왼쪽 메뉴 **SQL Editor** → **New query**
+2. 이 저장소의 `supabase/schema.sql` 내용을 **통째로 복사해서 붙여넣고** **Run**
+3. `Success. No rows returned` 가 나오면 끝입니다 (여러 번 실행해도 안전해요)
+
+테이블 16개, RLS 정책 20개, 도배 방지 트리거 2개가 만들어집니다.
+
+## 3. 이메일 인증 켜기
+
+1. **Authentication → Sign In / Providers → Email**
+2. **Confirm email** 을 켭니다 → 가입 시 인증 메일이 발송됩니다
+3. **Authentication → URL Configuration**
+   - **Site URL**: `https://mungcare.vercel.app`
+   - **Redirect URLs** 에 아래 두 줄을 추가:
+     ```
+     https://mungcare.vercel.app
+     http://localhost:8123
+     ```
+   (로컬에서 테스트하려면 두 번째 줄이 필요합니다)
+
+> 기본 메일 발송량은 시간당 몇 통으로 제한됩니다. 실제 사용자가 늘면
+> **Authentication → Emails → SMTP Settings** 에서 자기 메일 서비스를 연결하세요.
+
+## 4. 앱에 연결하기
+
+1. **Project Settings → Data API** 에서 두 값을 복사
+   - `Project URL`
+   - `anon` `public` key
+2. `assets/js/config.js` 를 열어 채웁니다:
+
+```js
+export const CONFIG = {
+  url: 'https://xxxxxxxxxxxx.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
+};
+```
+
+3. 배포:
+
+```bash
+./deploy.sh
+```
+
+## anon key 를 커밋해도 되나요?
+
+네, 괜찮습니다. anon key 는 브라우저에 노출되는 걸 전제로 만들어진 공개 키예요.
+실제 데이터 보호는 DB의 **RLS 정책**이 합니다 — `schema.sql` 에서 남의 건강 기록은
+조회 자체가 막혀 있고(`auth.uid() = user_id`), 커뮤니티 글도 본인 것만 수정·삭제할 수 있습니다.
+
+절대 커밋하면 안 되는 건 **`service_role` key** 입니다. 이건 RLS를 통째로 무시하니
+앱 코드 어디에도 넣지 마세요.
+
+## 잘 되는지 확인
+
+1. 사이트에서 회원가입 → 메일함에 인증 메일이 오는지
+2. 링크 클릭 → 자동으로 로그인되는지
+3. 아이 등록하고 산책 기록 남긴 뒤, **다른 브라우저에서 로그인**했을 때 그대로 보이는지
+4. Supabase **Table Editor → dogs** 에 행이 들어갔는지
+
+## 문제가 생기면
+
+| 증상 | 원인 |
+|---|---|
+| 가입은 되는데 메일이 안 옴 | Confirm email 이 꺼져 있거나 발송 한도 초과. 스팸함도 확인 |
+| 인증 링크를 눌러도 로그인 안 됨 | Redirect URLs 에 해당 주소가 없음 |
+| 기록이 저장 안 되고 토스트로 오류 | SQL 이 일부만 실행됨. `schema.sql` 을 다시 통째로 Run |
+| `column ... does not exist` | 스키마 버전이 앱보다 오래됨. `schema.sql` 다시 실행 |

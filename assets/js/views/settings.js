@@ -1,5 +1,5 @@
 /* 설정 — 계정, 화면, 데이터 백업, 커뮤니티 연동 */
-import { auth, backup, settings } from '../store.js';
+import { auth, backup, settings, isCloudMode } from '../store.js';
 import { esc, fmtDate, modal, field, inputEl, toast, confirmModal } from '../ui.js';
 
 export default {
@@ -14,7 +14,8 @@ export default {
     <div class="stack">
       <div class="grid g2">
         <div class="card">
-          <div class="card-head"><h2>👤 내 정보</h2></div>
+          <div class="card-head"><h2>👤 내 정보</h2><div class="spacer"></div>
+            <span class="chip ${isCloudMode() ? 'ok' : 'warn'}">${isCloudMode() ? '☁️ 서버 저장' : '이 기기에만'}</span></div>
           <div class="tbl-wrap"><table><tbody>
             <tr><th style="width:100px">부르는 이름</th><td>${esc(u.nick)}</td></tr>
             <tr><th>이메일</th><td>${esc(u.email)}</td></tr>
@@ -40,19 +41,24 @@ export default {
 
       <div class="card">
         <div class="card-head"><h2>💾 백업하고 되돌리기</h2></div>
-        <div class="alert warn" style="margin-bottom:14px"><span class="ai">⚠️</span><span>
-          <b>여기 쌓인 기록은 전부 이 브라우저에만 있어요.</b><br><span style="opacity:.85">
-          방문 기록을 지우거나 시크릿 창을 닫거나, 다른 기기에서 열면 안 보여요.
-          병원 기록처럼 중요한 건 가끔 파일로 받아서 따로 보관해두세요!</span></span></div>
+        ${isCloudMode()
+          ? `<div class="alert ok" style="margin-bottom:14px"><span class="ai">☁️</span><span>
+              <b>기록이 서버에 저장되고 있어요.</b><br><span style="opacity:.85">
+              휴대폰에서 적은 게 노트북에서도 그대로 보여요. 그래도 병원 기록처럼 중요한 건
+              가끔 파일로 받아두시면 마음이 편해요.</span></span></div>`
+          : `<div class="alert warn" style="margin-bottom:14px"><span class="ai">⚠️</span><span>
+              <b>여기 쌓인 기록은 전부 이 브라우저에만 있어요.</b><br><span style="opacity:.85">
+              방문 기록을 지우거나 시크릿 창을 닫거나, 다른 기기에서 열면 안 보여요.
+              병원 기록처럼 중요한 건 가끔 파일로 받아서 따로 보관해두세요!</span></span></div>`}
         <div class="row">
           <button class="btn btn-primary" data-export>⬇️ 파일로 저장하기</button>
-          <button class="btn" data-import>⬆️ 백업 불러오기</button>
+          ${isCloudMode() ? '' : '<button class="btn" data-import>⬆️ 백업 불러오기</button>'}
           <div class="spacer"></div>
-          <button class="btn btn-danger" data-wipe>계정이랑 기록 다 지우기</button>
+          <button class="btn btn-danger" data-wipe>${isCloudMode() ? '우리 아이 기록 다 지우기' : '계정이랑 기록 다 지우기'}</button>
         </div>
       </div>
 
-      <div class="card">
+      ${isCloudMode() ? '' : `<div class="card">
         <div class="card-head"><h2>💬 커뮤니티 연동 (giscus)</h2>
           <span class="chip ${giscus.repo ? 'ok' : ''}">${giscus.repo ? '연결됨' : '미연결'}</span></div>
         <p style="font-size:13px;color:var(--ink-2);line-height:1.65;margin:0 0 12px">
@@ -67,7 +73,7 @@ export default {
           ${field('Category ID', inputEl('gCatId', { value: giscus.categoryId, placeholder: 'DIC_kw...' }))}
         </div>
         <button class="btn btn-primary btn-sm" data-giscus-save>저장할게요</button>
-      </div>
+      </div>`}
 
       <div class="card">
         <div class="card-head"><h2>🗺️ 앞으로 이런 것도 만들 거예요</h2></div>
@@ -76,7 +82,7 @@ export default {
              ['🥫 사료 검색', '제품명만 넣으면 칼로리랑 성분이 쫙'],
              ['📷 화식 영양 분석', '재료 넣으면 영양 균형이 맞는지 봐드려요'],
              ['🔔 알림 받기', '접종일이나 약 시간에 폰으로 딩동'],
-             ['👥 진짜 수다방', '어느 기기에서 들어와도 그대로 보이게'],
+
              ['🛒 최저가 알림', '가격 떨어지면 알려드릴게요']
             ].map(([t, d]) => `<div style="border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px">
               <div style="font-weight:700;font-size:13px">${esc(t)}</div>
@@ -90,7 +96,7 @@ export default {
     root.querySelector('[data-nick]')?.addEventListener('click', () => modal({
       title: '이름 바꾸기',
       body: field('뭐라고 불러드릴까요?', inputEl('nick', { value: u.nick, required: true })),
-      onSubmit: f => { auth.updateNick(f.nick); toast('바꿔뒀어요!'); }
+      onSubmit: async f => { await auth.updateNick(f.nick); toast('바꿔뒀어요!'); }
     }));
 
     root.querySelector('[data-pw]')?.addEventListener('click', () => modal({
@@ -134,8 +140,12 @@ export default {
     });
 
     root.querySelector('[data-wipe]')?.addEventListener('click', () =>
-      confirmModal('계정 지우기', '계정이랑 우리 아이 기록이 전부 사라져요. 되돌릴 수 없는데, 정말 지울까요?',
-        () => { backup.wipeAccount(); toast('지웠어요.'); location.hash = '#/'; }));
+      confirmModal(
+        isCloudMode() ? '기록 전부 지우기' : '계정 지우기',
+        isCloudMode()
+          ? '등록한 아이와 밥·약·산책·병원 기록이 서버에서 전부 사라지고 로그아웃돼요. 되돌릴 수 없는데, 정말 지울까요?'
+          : '계정이랑 우리 아이 기록이 전부 사라져요. 되돌릴 수 없는데, 정말 지울까요?',
+        async () => { await backup.wipeAccount(); toast('지웠어요.'); location.hash = '#/'; }));
 
     root.querySelector('[data-giscus-save]')?.addEventListener('click', () => {
       const g = {

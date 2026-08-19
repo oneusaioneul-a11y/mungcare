@@ -23,11 +23,15 @@ const VAX = JSON.parse(await fs.readFile(join(ROOT, 'data/vaccines.json'), 'utf8
 let pass = 0, fail = 0;
 const t = (name, cond, extra = '') => { cond ? (pass++, console.log('  ✓', name)) : (fail++, console.log('  ✗', name, extra)); };
 
+console.log('\n[모드]');
+t('설정이 비었으면 local 모드', S.MODE === 'local', S.MODE);
+
 console.log('\n[인증]');
-await S.auth.signup({ email: 'A@Test.com', password: 'password123', nick: '몽이집사' });
+const signupResult = await S.auth.signup({ email: 'A@Test.com', password: 'password123', nick: '몽이집사' });
 t('가입 후 로그인 상태', S.auth.current()?.email === 'a@test.com');
+t('로컬 가입은 이메일 인증 불필요', signupResult.needsConfirm === false);
 t('평문 비밀번호 미저장', !JSON.stringify(S._debug.state()).includes('password123'));
-S.auth.logout();
+await S.auth.logout();
 t('로그아웃', S.auth.current() === null);
 try { await S.auth.login({ email: 'a@test.com', password: 'wrongpass1' }); t('오답 거부', false); }
 catch { t('오답 거부', true); }
@@ -93,15 +97,66 @@ S.community.post({ kind: 'free', title: '안녕하세요', body: '반갑습니�
 const p0 = S.community.posts()[0];
 S.community.comment(p0.id, '환영합니다');
 S.community.toggleLike(p0.id);
-t('글/댓글/좋아요', S.community.posts()[0].comments.length === 1 && S.community.posts()[0].likes.length === 1);
+t('글/댓글/좋아요', S.community.posts()[0].comments.length === 1 && S.community.posts()[0].likeCount === 1 && S.community.posts()[0].liked === true);
 S.community.review('brush-slicker', { stars: 5, body: '좋아요' });
 S.community.review('brush-slicker', { stars: 4, body: '수정' });
 t('평가는 1인 1건 갱신', S.community.score('brush-slicker').n === 1 && S.community.score('brush-slicker').avg === 4);
 const json = S.backup.export();
+t('백업 형식 v2', JSON.parse(json).kind === 'mungcare-backup' && JSON.parse(json).version === 2);
 S.dogs.remove(dog.id);
 t('삭제 확인', S.dogs.all().length === 0);
 S.backup.import(json);
 t('백업 복원', S.dogs.all().length === 1 && S.dogs.all()[0].name === '몽이');
+
+console.log('\n[식별자]');
+t('레코드 id 가 UUID 형식', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(S.uid()), S.uid());
+
+
+console.log('\n[클라우드 컬럼 매핑]');
+const C = await import(base + 'drivers/cloud.js');
+const dogRow = C.toRow('dogs', C.clean({
+  id: 'x', dogId: null, userId: 'u1', name: '몽이', adoptedAt: '2024-01-02',
+  foodName: '연어', foodKcal: '3700', mealsPerDay: '2', foodNote: '', weight: '4.2', notes: '메모'
+}));
+t('dogs: camelCase → snake_case', dogRow.adopted_at === '2024-01-02' && dogRow.food_name === '연어'
+   && dogRow.meals_per_day === 2 && dogRow.food_kcal === 3700, JSON.stringify(dogRow));
+t('dogs: 빈 문자열은 null 로', dogRow.food_note === null);
+t('dogs: 숫자 문자열은 숫자로', typeof dogRow.weight === 'number' && dogRow.weight === 4.2);
+t('dogs: 매핑 없는 필드는 그대로', dogRow.name === '몽이' && dogRow.notes === '메모');
+
+const medRow = C.toRow('meds', C.clean({ id: 'm', name: '심장약', perDay: '1', stock: '30', from: '2026-01-01' }));
+t('meds: perDay → per_day', medRow.per_day === 1 && medRow.stock === 30 && medRow.from === '2026-01-01');
+
+const recRow = C.toRow('recipes', C.clean({ title: '화식', totalG: '600', totalKcal: '750', toxic: [] }));
+t('recipes: totalG/totalKcal → total_g/total_kcal', recRow.total_g === 600 && recRow.total_kcal === 750);
+
+const alRow = C.toRow('allergies', C.clean({ name: '닭고기', foundAt: '2025-05-05', severity: 'high' }));
+t('allergies: foundAt → found_at', alRow.found_at === '2025-05-05');
+
+// 왕복 변환이 원본을 보존하는지
+const back = C.fromRow('dogs', dogRow);
+t('왕복 변환 보존', back.adoptedAt === '2024-01-02' && back.foodName === '연어'
+   && back.mealsPerDay === 2 && back.name === '몽이', JSON.stringify(back));
+
+const walkBack = C.fromRow('walks', { id: 'w', dog_id: 'd1', user_id: 'u1', date: '2026-08-19', minutes: 30, created_at: 'ts' });
+t('walks 왕복', walkBack.dogId === 'd1' && walkBack.userId === 'u1' && walkBack.createdAt === 'ts');
+
+const postRow = C.toRow('posts', C.clean({ id: 'p1', userId: 'u1', kind: 'free', title: 'ㅎㅇ', body: '본문', tags: ['a'], productId: 'brush-slicker' }));
+t('posts: productId → product_id', postRow.product_id === 'brush-slicker' && postRow.user_id === 'u1'
+   && !('productId' in postRow) && !('userId' in postRow), JSON.stringify(postRow));
+
+const cmtRow = C.toRow('comments', C.clean({ id: 'c1', postId: 'p1', userId: 'u1', body: '댓글' }));
+t('comments: postId → post_id', cmtRow.post_id === 'p1' && cmtRow.user_id === 'u1' && !('postId' in cmtRow));
+
+// 앱이 실제로 보내는 키가 전부 snake_case 인지 (컬럼 오류 예방)
+const camel = o => Object.keys(o).filter(k => /[A-Z]/.test(k));
+t('전송 키에 camelCase 잔존 없음',
+  [dogRow, medRow, recRow, alRow, postRow, cmtRow].every(r => camel(r).length === 0),
+  JSON.stringify([dogRow, medRow, recRow, alRow, postRow, cmtRow].flatMap(camel)));
+
+t('오류 메시지 한국어화', C.translate('Invalid login credentials').includes('맞지 않아요')
+   && C.translate('Email not confirmed').includes('인증'));
+t('모르는 오류는 원문 유지', C.translate('something odd') === 'something odd');
 
 console.log('\n[화식 위험 재료]');
 const R = await import(base + 'views/recipes.js');

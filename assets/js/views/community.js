@@ -1,5 +1,5 @@
 /* 커뮤니티 — 이야기 나눔 · 질문 · 리뷰 요청 · 레시피 공유 */
-import { community, auth } from '../store.js';
+import { community, auth, isCloudMode } from '../store.js';
 import { esc, relDate, empty, modal, field, inputEl, textareaEl, selectEl, toast, initials, confirmModal } from '../ui.js';
 import { ICONS } from '../icons.js';
 
@@ -29,14 +29,14 @@ export default {
         : `<div class="card">${empty(ICONS.chat, '아직 조용하네요. 첫 이야기를 들려주세요!',
             '<button class="btn btn-primary" data-write>이야기 남기기</button>')}</div>`}
 
-      <div class="card">
+      ${isCloudMode() ? '' : `<div class="card">
         <div class="card-head"><h2>🌐 잠깐, 알아두실 게 있어요</h2></div>
         <p style="font-size:13px;color:var(--ink-2);line-height:1.65;margin:0">
           지금 여기 쓰신 글은 <b>이 브라우저에만 저장</b>돼서 다른 분들께는 안 보여요. 서버 없이 돌아가는 사이트라서요.
           진짜로 여럿이 같이 쓰는 게시판으로 바꾸려면 GitHub Discussions를 켜고 <b>giscus</b> 를 연결하면 돼요.
           <code>[설정 → 커뮤니티 연동]</code>에 정보만 넣어주시면 바로 아래에 진짜 댓글창이 붙어요!
         </p>
-      </div>
+      </div>`}
       <div id="giscus-slot"></div>
     </div>`;
 
@@ -55,6 +55,16 @@ export default {
     })));
 
     root.querySelectorAll('[data-like]').forEach(b => b.addEventListener('click', () => community.toggleLike(b.dataset.like)));
+    root.querySelectorAll('[data-report]').forEach(b => b.addEventListener('click', () => modal({
+      title: '이 글을 신고할게요',
+      body: field('어떤 점이 문제인가요?', textareaEl('reason', { required: true, rows: 3,
+        placeholder: '광고·욕설·잘못된 의학 정보 등 어떤 점이 걱정되는지 적어주세요' })),
+      submitLabel: '신고하기',
+      onSubmit: async f => {
+        await community.report('post', b.dataset.report, f.reason);
+        toast('알려주셔서 고마워요. 확인해볼게요!');
+      }
+    })));
     root.querySelectorAll('[data-delpost]').forEach(b => b.addEventListener('click', () =>
       confirmModal('글 지우기', '댓글까지 같이 지워져요. 그래도 지울까요?', () => community.remove(b.dataset.delpost))));
     root.querySelectorAll('[data-delcmt]').forEach(b => b.addEventListener('click', () =>
@@ -71,20 +81,22 @@ export default {
 };
 
 function post(p, me) {
-  const liked = me && (p.likes || []).includes(me.id);
+  const liked = !!p.liked;
   return `<div class="post">
     <div class="ph">
       <div class="avatar">${esc(initials(p.author))}</div>
       <b style="color:var(--ink)">${esc(p.author)}</b> · ${relDate(p.createdAt)}
       <span class="chip brand">${esc(LABEL[p.kind] || p.kind)}</span>
       <div class="spacer"></div>
-      ${me && p.authorId === me.id ? `<button class="btn btn-sm btn-danger" data-delpost="${esc(p.id)}">삭제</button>` : ''}
+      ${me && p.authorId === me.id
+        ? `<button class="btn btn-sm btn-danger" data-delpost="${esc(p.id)}">삭제</button>`
+        : `<button class="btn btn-sm btn-ghost" data-report="${esc(p.id)}" title="신고하기">🚩</button>`}
     </div>
     <div class="pt">${esc(p.title)}</div>
     <div class="pb">${esc(p.body)}</div>
     ${p.tags?.length ? `<div class="row" style="gap:5px;margin-top:9px">${p.tags.map(t => `<span class="chip">#${esc(t)}</span>`).join('')}</div>` : ''}
     <div class="pf">
-      <button class="btn btn-sm ${liked ? 'btn-primary' : ''}" data-like="${esc(p.id)}">👍 ${(p.likes || []).length}</button>
+      <button class="btn btn-sm ${liked ? 'btn-primary' : ''}" data-like="${esc(p.id)}">👍 ${p.likeCount || 0}</button>
       <span style="font-size:12px;color:var(--ink-3)">💬 ${p.comments.length}개</span>
     </div>
     ${p.comments.map(c => `<div class="cmt">

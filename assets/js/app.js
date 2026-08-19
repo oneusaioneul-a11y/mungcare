@@ -1,5 +1,5 @@
 /* app.js — 애플리케이션 셸, 라우터, 부트스트랩 */
-import { auth, dogs, col, settings, subscribe } from './store.js';
+import { auth, dogs, col, settings, subscribe, onError, initAuth, isCloudMode, isReady } from './store.js';
 import { esc, toast, initials } from './ui.js';
 import * as H from './health.js';
 import { ICONS, dogIcon, iconKeyForBreed } from './icons.js';
@@ -76,6 +76,8 @@ export function context() {
 /* ── 렌더 ─────────────────────────────────────────────── */
 const app = () => document.getElementById('app');
 let rendering = false;
+let recoveryMode = false;
+export const setRecovery = v => { recoveryMode = v; };
 
 export function navigate(hash) { location.hash = hash; }
 
@@ -113,7 +115,7 @@ function paint() {
   const user = auth.current();
   applyTheme();
 
-  if (!user) { authView.mount(root, { onDone: render }); return; }
+  if (!user) { authView.mount(root, { onDone: render, recovery: recoveryMode }); return; }
 
   const path = (location.hash.replace(/^#/, '') || '/').split('?')[0];
   const view = ROUTES[path] || ROUTES['/'];
@@ -162,7 +164,9 @@ function paint() {
   const vr = root.querySelector('#viewroot');
   view.mount(vr, ctx);
 
-  root.querySelector('[data-logout]')?.addEventListener('click', () => { auth.logout(); location.hash = '#/'; render(); });
+  root.querySelector('[data-logout]')?.addEventListener('click', async () => {
+    await auth.logout(); location.hash = '#/'; render();
+  });
   root.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
     settings.set('theme', settings.get('theme') === 'dark' ? 'light' : 'dark');
   });
@@ -210,10 +214,15 @@ async function loadJSON(path) {
 
 (async function boot() {
   try {
-    const [b, v, p] = await Promise.all([
-      loadJSON('data/breeds.json'), loadJSON('data/vaccines.json'), loadJSON('data/products.json')
+    onError(err => toast(err.message || '서버에 저장하지 못했어요.', 4000));
+
+    const [[b, v, p], sessionState] = await Promise.all([
+      Promise.all([loadJSON('data/breeds.json'), loadJSON('data/vaccines.json'), loadJSON('data/products.json')]),
+      initAuth().catch(err => { console.warn('세션 복원 실패', err); return null; })
     ]);
     DB.breeds = b; DB.vaccines = v; DB.products = p;
+    if (sessionState === 'recovery') recoveryMode = true;
+
     subscribe(() => render());
     window.addEventListener('hashchange', render);
     render();
