@@ -28,6 +28,31 @@
 `main` 브랜치에 push하면 `.github/workflows/deploy.yml`이 GitHub Pages로 배포합니다.
 저장소 **Settings → Pages → Source** 를 **GitHub Actions** 로 설정하세요.
 
+배포 워크플로에는 `verify` 잡이 붙어 있어, 배포 후 실제 사이트에 접속해
+HTTP 상태 · 주요 자산 · JS MIME 타입을 검사합니다. 게시에 실패하면 워크플로가 실패로 표시됩니다.
+
+현재 배포 주소: <https://redreta.github.io/mungcare/>
+
+### ⚠️ 일부 네트워크에서 GitHub Pages 접속이 차단될 수 있습니다
+
+GitHub Pages는 `185.199.108~111.153` 대역에서 서비스됩니다. 일부 국내 회선에서 이 대역이
+차단되어 있어, **DNS는 정상 해석되지만 TCP 연결이 타임아웃**되는 경우가 있습니다.
+(같은 증상이면 `github.github.io` 같은 GitHub 공식 Pages 사이트도 함께 열리지 않습니다.)
+
+진단:
+
+```bash
+dig +short redreta.github.io          # 185.199.108~111.153 이 나오면 DNS는 정상
+curl -I --max-time 10 https://redreta.github.io/mungcare/
+curl -I --max-time 10 https://github.github.io/      # 이것도 실패하면 회선 차단
+```
+
+이 경우 사이트나 배포에는 문제가 없습니다. 해결 방법:
+
+- 다른 회선(휴대폰 LTE 등)에서 접속
+- 또는 차단되지 않는 호스트로 이전 — Cloudflare Pages(`*.pages.dev`), Netlify, Vercel 모두
+  같은 저장소를 연결해 push마다 자동 배포할 수 있으며, 빌드 설정 없이 정적 파일을 그대로 서빙하면 됩니다.
+
 ## 용품 데이터 자동 수집
 
 `.github/workflows/crawl.yml`이 매주 `tools/crawl.mjs`를 실행해 `data/products.json`의 가격·평점을 갱신하고,
@@ -65,12 +90,16 @@ node tools/crawl.mjs         # 실제 갱신
 
 ## 로컬 실행
 
-ES Modules와 `fetch`를 사용하므로 `file://`이 아닌 HTTP 서버가 필요합니다.
-
 ```bash
-python3 -m http.server 8080
-# http://localhost:8080
+./serve.sh          # 서버 실행 + 브라우저 자동 오픈 (http://localhost:8123)
+./serve.sh 9000     # 다른 포트로 실행
+./serve.sh stop     # 서버 중지
 ```
+
+> ⚠️ **`index.html` 을 더블클릭해서 열면 동작하지 않습니다.**
+> 이 사이트는 ES Modules와 `fetch`를 사용하는데, `file://` 로 열면 브라우저 보안 정책(CORS)이
+> 모듈 로드를 차단해 "불러오는 중…" 화면에서 멈춥니다. 반드시 위 스크립트가 띄운
+> `http://localhost:...` 주소로 접속하세요. (그렇게 열면 화면에 안내 메시지가 표시됩니다.)
 
 ## ⚠️ 데이터 저장 방식에 대한 안내
 
@@ -90,6 +119,7 @@ GitHub Pages는 **정적 호스팅**이라 서버와 데이터베이스가 없�
 
 ```
 index.html
+serve.sh                 로컬 실행 스크립트
 assets/
   css/app.css            디자인 시스템 (라이트/다크, S-Core Dream 웹폰트)
   js/
