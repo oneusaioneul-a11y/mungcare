@@ -1,6 +1,6 @@
 /* app.js — 애플리케이션 셸, 라우터, 부트스트랩 */
-import { auth, admin, dogs, col, settings, subscribe, onError, initAuth, isCloudMode, isReady } from './store.js';
-import { esc, toast, initials } from './ui.js';
+import { auth, admin, dogs, col, settings, subscribe, onError, initAuth, isCloudMode, isReady, reconsentDue, reconsent } from './store.js';
+import { esc, toast, initials, modal } from './ui.js';
 import * as H from './health.js';
 import { ICONS, dogIcon, iconKeyForBreed } from './icons.js';
 
@@ -19,7 +19,7 @@ import products from './views/products.js';
 import community from './views/community.js';
 import adopt from './views/adopt.js';
 import partnersView from './views/partners.js';
-import privacyView from './views/privacy.js';
+import privacyView, { policyHTML } from './views/privacy.js';
 import settingsView from './views/settings.js';
 import adminView from './views/admin.js';
 
@@ -125,6 +125,10 @@ function paint() {
 
   if (!user) { authView.mount(root, { onDone: render, recovery: recoveryMode }); return; }
 
+  // 처리방침 판이 올라갔으면 재동의를 받을 때까지 앱 진입을 막습니다
+  const due = reconsentDue();
+  if (due.length) { reconsentScreen(root, due); return; }
+
   const path = (location.hash.replace(/^#/, '') || '/').split('?')[0];
   const view = ROUTES[path] || ROUTES['/'];
   const ctx = context();
@@ -194,6 +198,48 @@ function paint() {
   root.querySelectorAll('.nav a').forEach(a => a.addEventListener('click', () => {
     root.querySelector('#sidebar')?.classList.remove('open'); root.querySelector('.scrim')?.remove();
   }));
+}
+
+/* ── 처리방침 재동의 화면 — 동의 전까지 앱을 쓸 수 없습니다 ── */
+const RECONSENT_LABELS = {
+  privacy: '(필수) 개인정보 수집·이용에 동의해요',
+  partner_terms: '(필수) 업체 정보가 디렉터리에 공개되는 것에 동의해요'
+};
+
+function reconsentScreen(root, due) {
+  const user = auth.current();
+  root.innerHTML = `
+  <div style="min-height:100vh;display:grid;place-items:center;padding:24px">
+    <form class="card" data-reconsent style="max-width:520px;width:100%">
+      <div style="font-size:32px;margin-bottom:8px">📋</div>
+      <h1 style="margin:0 0 8px;font-size:17px">개인정보처리방침이 바뀌었어요</h1>
+      <p style="margin:0 0 14px;font-size:13px;line-height:1.7;color:var(--ink-2)">
+        ${esc(user.nick)}님, 처리방침이 새 판으로 바뀌어 다시 한번 동의가 필요해요.
+        내용을 확인하고 동의해주시면 바로 이어서 쓸 수 있어요.</p>
+      <div class="field" style="margin-bottom:14px">
+        ${due.map(d => `<label class="check" style="margin-bottom:7px"><input type="checkbox" name="${esc(d)}" required>
+          <span>${RECONSENT_LABELS[d] || esc(d)}
+          ${d === 'privacy' ? `<button type="button" class="btn btn-ghost btn-sm" data-policy style="padding:1px 7px;font-size:11.5px">내용 보기</button>` : ''}</span></label>`).join('')}
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn btn-primary" type="submit">동의하고 계속하기</button>
+        <button class="btn btn-ghost" type="button" data-later>다음에 (로그아웃)</button>
+      </div>
+    </form>
+  </div>`;
+
+  root.querySelector('[data-policy]')?.addEventListener('click', e => {
+    e.preventDefault();
+    modal({ title: '개인정보처리방침', wide: true, footer: false, body: policyHTML(), onSubmit: () => {} });
+  });
+  root.querySelector('[data-later]')?.addEventListener('click', async () => {
+    await auth.logout(); authView.reset(); location.hash = '#/'; render();
+  });
+  root.querySelector('[data-reconsent]')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    try { await reconsent(due); toast('동의해주셔서 고마워요!'); render(); }
+    catch (err) { toast(err.message); }
+  });
 }
 
 function dogSwitcher(ctx) {

@@ -647,6 +647,30 @@ export const partners = {
   }
 };
 
+/* ── 처리방침 재동의 — PRIVACY_VERSION 이 올라가면 기존 회원에게 다시 받습니다 ──
+   화면(app.js)이 로그인 직후 reconsentDue() 를 확인해, 남아 있으면 앱 진입을 막고
+   재동의 화면을 띄웁니다. 동의하면 새 판으로 이력이 한 건 더 쌓입니다(기존 이력 보존). */
+export function reconsentDue() {
+  const u = auth.current(); if (!u) return [];
+  const consents = auth.consents();
+  const latest = doc => [...consents].filter(c => c.doc === doc)
+    .sort((a, b) => String(b.agreedAt).localeCompare(String(a.agreedAt)))[0];
+  const docs = ['privacy', ...(partners.mine() ? ['partner_terms'] : [])];
+  return docs.filter(d => latest(d)?.version !== PRIVACY_VERSION);
+}
+
+export async function reconsent(docs) {
+  const u = auth.current(); if (!u || !docs?.length) return;
+  const now = new Date().toISOString();
+  if (MODE === 'cloud') {
+    await C.addConsents(docs.map(doc => ({ user_id: u.id, doc, version: PRIVACY_VERSION })));
+    (cloudUser.consents ||= []).unshift(...docs.map(doc => ({ doc, version: PRIVACY_VERSION, agreedAt: now })));
+  } else {
+    (u.consents ||= []).push(...docs.map(doc => ({ doc, version: PRIVACY_VERSION, agreedAt: now })));
+  }
+  persist();
+}
+
 /* ── 운영자 도구 — 신고 처리 · 파트너 확인 · 회원 현황 ─────────────
    승격은 앱에 없음: cloud 는 Table Editor 에서 members.profiles.role='admin',
    local(개발)은 _debug.makeAdmin(email). 서버 강제는 RLS(members.is_admin())가 담당. */

@@ -184,6 +184,25 @@ catch (e) { t('신고함은 cloud 전용', e.message.includes('cloud'), e.messag
 t('신고 대상 원문 찾기(글 제목)', S.admin.findTarget('post', p0.id) === '안녕하세요');
 t('없는 대상은 null', S.admin.findTarget('comment', 'no-such-id') === null);
 
+console.log('\n[처리방침 재동의]');
+t('현재 판에 동의한 회원은 재동의 불필요', S.reconsentDue().length === 0, JSON.stringify(S.reconsentDue()));
+// 판 상향 시뮬레이션: 기존 동의 이력을 옛 판으로 바꿔봅니다
+S.auth.current().consents.filter(c => c.doc === 'privacy').forEach(c => { c.version = '0.9 (구판)'; });
+t('구판 동의자는 privacy 재동의 필요', JSON.stringify(S.reconsentDue()) === '["privacy"]', JSON.stringify(S.reconsentDue()));
+await S.reconsent(S.reconsentDue());
+t('재동의 후 해소 · 기존 이력 보존', S.reconsentDue().length === 0
+  && S.auth.consents().filter(c => c.doc === 'privacy').length === 2
+  && S.auth.consents().some(c => c.doc === 'privacy' && c.version === '0.9 (구판)'));
+await S.auth.logout();
+await S.auth.login({ email: 'vet@test.com', password: 'password123' });
+S.auth.current().consents.forEach(c => { c.version = '0.9 (구판)'; });
+t('파트너는 partner_terms 도 재동의', S.reconsentDue().includes('privacy') && S.reconsentDue().includes('partner_terms'),
+  JSON.stringify(S.reconsentDue()));
+await S.reconsent(S.reconsentDue());
+t('파트너 재동의 해소', S.reconsentDue().length === 0);
+await S.auth.logout();
+await S.auth.login({ email: 'a@test.com', password: 'password123' });
+
 console.log('\n[식별자]');
 t('레코드 id 가 UUID 형식', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(S.uid()), S.uid());
 
