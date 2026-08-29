@@ -32,6 +32,7 @@ const SCHEMA = {
   post_ratings: 'community', chat_messages: 'community',
   product_reviews: 'community', reports: 'community',
   posts_view: 'community', comments_view: 'community', chat_view: 'community', reviews_view: 'community',
+  reports_view: 'community',
   partners: 'partners', partner_reviews: 'partners',
   partners_view: 'partners', partner_reviews_view: 'partners'
 };
@@ -332,3 +333,31 @@ export async function upsertPartnerReview(row) {
   if (error) throw new Error(translate(error.message));
 }
 export async function delPartnerReview(id) { return remove('partner_reviews', id); }
+
+/* ── 운영자 (RLS 의 members.is_admin() 이 통과해야만 동작) ─────── */
+export async function loadReports() {
+  const { data, error } = await from('reports_view').select('*')
+    .order('created_at', { ascending: false }).limit(300);
+  if (error) throw new Error(translate(error.message));
+  return (data || []).map(r => ({
+    id: r.id, targetType: r.target_type, targetId: r.target_id, reason: r.reason,
+    status: r.status, reporter: r.reporter || '알 수 없음', reporterId: r.reporter_id,
+    createdAt: r.created_at, resolvedAt: r.resolved_at
+  }));
+}
+export async function updateReport(id, status) {
+  const { error } = await from('reports')
+    .update({ status, resolved_at: status === 'open' ? null : new Date().toISOString() }).eq('id', id);
+  if (error) throw new Error(translate(error.message));
+}
+export async function setPartnerVerified(id, verified) {
+  const { error } = await from('partners')
+    .update({ verified, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw new Error(translate(error.message));
+}
+export async function loadProfiles() {
+  const { data, error } = await from('profiles').select('*')
+    .order('created_at', { ascending: false }).limit(500);
+  if (error) throw new Error(translate(error.message));
+  return (data || []).map(p => ({ id: p.id, nick: p.nick, role: p.role || 'user', createdAt: p.created_at }));
+}

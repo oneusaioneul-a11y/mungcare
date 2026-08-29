@@ -166,6 +166,24 @@ S.partners.review(myBiz.id, { stars: 4, body: '수정' });
 t('업체 별점도 1인 1건 갱신', S.partners.score(myBiz.id).n === 1 && S.partners.score(myBiz.id).avg === 4);
 t('업종 필터', S.partners.list('hospital').length === 1 && S.partners.list('store').length === 0);
 
+console.log('\n[운영자 도구]');
+t('일반 회원은 운영자 아님', S.admin.isAdmin() === false);
+try { await S.admin.setPartnerVerified(myBiz.id, true); t('비운영자 차단', false); }
+catch (e) { t('비운영자 차단', e.message.includes('운영자'), e.message); }
+S._debug.makeAdmin('a@test.com');
+t('로컬 운영자 승격', S.admin.isAdmin() === true && S.auth.current().role === 'admin');
+await S.admin.setPartnerVerified(myBiz.id, true);
+t('파트너 확인 처리', S.partners.get(myBiz.id).verified === true);
+await S.admin.setPartnerVerified(myBiz.id, false);
+t('파트너 확인 해제', S.partners.get(myBiz.id).verified === false);
+const members = await S.admin.members();
+t('회원 목록 (역할 포함)', members.length >= 2 && members.every(m => m.nick && m.role)
+  && members.find(m => m.email === 'a@test.com')?.role === 'admin', JSON.stringify(members.map(m => m.email)));
+try { await S.admin.loadReports(); t('신고함은 cloud 전용', false); }
+catch (e) { t('신고함은 cloud 전용', e.message.includes('cloud'), e.message); }
+t('신고 대상 원문 찾기(글 제목)', S.admin.findTarget('post', p0.id) === '안녕하세요');
+t('없는 대상은 null', S.admin.findTarget('comment', 'no-such-id') === null);
+
 console.log('\n[식별자]');
 t('레코드 id 가 UUID 형식', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(S.uid()), S.uid());
 

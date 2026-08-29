@@ -1,5 +1,5 @@
 /* app.js — 애플리케이션 셸, 라우터, 부트스트랩 */
-import { auth, dogs, col, settings, subscribe, onError, initAuth, isCloudMode, isReady } from './store.js';
+import { auth, admin, dogs, col, settings, subscribe, onError, initAuth, isCloudMode, isReady } from './store.js';
 import { esc, toast, initials } from './ui.js';
 import * as H from './health.js';
 import { ICONS, dogIcon, iconKeyForBreed } from './icons.js';
@@ -21,6 +21,7 @@ import adopt from './views/adopt.js';
 import partnersView from './views/partners.js';
 import privacyView from './views/privacy.js';
 import settingsView from './views/settings.js';
+import adminView from './views/admin.js';
 
 export const DB = { breeds: null, vaccines: null, products: null };
 
@@ -29,7 +30,7 @@ const ROUTES = {
   '/meds': meds, '/walk': walk, '/vaccine': vaccine, '/medical': medical,
   '/allergy': allergy, '/risk': risk, '/products': products,
   '/community': community, '/adopt': adopt, '/partners': partnersView,
-  '/privacy': privacyView, '/settings': settingsView
+  '/privacy': privacyView, '/settings': settingsView, '/admin': adminView
 };
 
 const NAV = [
@@ -52,7 +53,8 @@ const NAV = [
   { to: '/adopt', ico: ICONS.heart, label: '유기견 입양' },
   { to: '/partners', ico: ICONS.hospital, label: '동물병원 · 용품점' },
   { group: '' },
-  { to: '/settings', ico: ICONS.gear, label: '설정' }
+  { to: '/settings', ico: ICONS.gear, label: '설정' },
+  { to: '/admin', ico: ICONS.alert, label: '운영자 도구', adminOnly: true }
 ];
 
 /* ── 컨텍스트 ─────────────────────────────────────────── */
@@ -139,7 +141,7 @@ function paint() {
       </div>
       ${dogSwitcher(ctx)}
       <nav class="nav">
-        ${NAV.map(n => n.group !== undefined
+        ${NAV.filter(n => !n.adminOnly || admin.isAdmin()).map(n => n.group !== undefined
           ? (n.group ? `<div class="nav-group">${esc(n.group)}</div>` : '<div style="height:10px"></div>')
           : `<a href="#${n.to}" class="${path === n.to ? 'active' : ''}">
                <span class="ico">${n.ico}</span>${esc(n.label)}

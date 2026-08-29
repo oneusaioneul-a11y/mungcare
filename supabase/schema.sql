@@ -27,6 +27,21 @@ create table if not exists members.profiles (
 );
 comment on table members.profiles is '사용자 공개 프로필. 커뮤니티에 닉네임을 표시하기 위해 조회는 전체 공개.';
 
+-- 운영자 권한. 승격은 Table Editor 에서 role 을 'admin' 으로 바꿉니다 (앱에는 승격 UI 없음).
+alter table members.profiles add column if not exists role text not null default 'user';
+do $$ begin
+  alter table members.profiles add constraint profiles_role_chk check (role in ('user','admin'));
+exception when duplicate_object then null; end $$;
+
+-- RLS 정책에서 쓰는 운영자 판별 함수 (security definer — profiles RLS 를 우회해 role 만 확인)
+create or replace function members.is_admin()
+returns boolean
+language sql stable security definer
+set search_path = members
+as $$
+  select exists (select 1 from members.profiles where id = auth.uid() and role = 'admin');
+$$;
+
 -- 개인정보 동의 이력 (개인정보보호법 — 어떤 문서 몇 판에, 언제 동의했는지 보관)
 create table if not exists members.consents (
   id         uuid primary key default gen_random_uuid(),
@@ -289,6 +304,13 @@ create table if not exists community.reports (
   unique (reporter_id, target_type, target_id)
 );
 
+-- 운영자 처리 상태 (open=접수, resolved=조치 완료, dismissed=문제 없음)
+alter table community.reports add column if not exists status text not null default 'open';
+do $$ begin
+  alter table community.reports add constraint reports_status_chk check (status in ('open','resolved','dismissed'));
+exception when duplicate_object then null; end $$;
+alter table community.reports add column if not exists resolved_at timestamptz;
+
 -- 도배 방지: 1분에 글 3개 / 댓글 10개 / 채팅 20개 제한
 create or replace function community.check_post_rate()
 returns trigger language plpgsql security definer set search_path = community as $$
@@ -426,8 +448,21 @@ end $$;
 
 drop policy if exists reports_read  on community.reports;
 drop policy if exists reports_write on community.reports;
-create policy reports_read  on community.reports for select using (auth.uid() = reporter_id);
+drop policy if exists reports_admin_update on community.reports;
+create policy reports_read  on community.reports for select using (auth.uid() = reporter_id or members.is_admin());
 create policy reports_write on community.reports for insert with check (auth.uid() = reporter_id);
+create policy reports_admin_update on community.reports for update
+  using (members.is_admin()) with check (members.is_admin());
+
+-- 운영자: 신고된 콘텐츠 삭제 권한 (본인 삭제 정책과 별개로 추가)
+do $$
+declare t text;
+begin
+  foreach t in array array['posts','comments','chat_messages','product_reviews'] loop
+    execute format('drop policy if exists %I on community.%I', t || '_admin_delete', t);
+    execute format('create policy %I on community.%I for delete using (members.is_admin())', t || '_admin_delete', t);
+  end loop;
+end $$;
 
 -- partners: 디렉터리는 전체 공개, 등록·수정은 본인 계정만
 drop policy if exists partners_read   on partners.partners;
@@ -437,6 +472,11 @@ create policy partners_read   on partners.partners for select using (true);
 create policy partners_write  on partners.partners for insert with check (auth.uid() = id);
 create policy partners_update on partners.partners for update using (auth.uid() = id) with check (auth.uid() = id);
 
+-- 운영자: 사업자등록 확인 후 verified 갱신
+drop policy if exists partners_admin_update on partners.partners;
+create policy partners_admin_update on partners.partners for update
+  using (members.is_admin()) with check (members.is_admin());
+
 drop policy if exists partner_reviews_read   on partners.partner_reviews;
 drop policy if exists partner_reviews_write  on partners.partner_reviews;
 drop policy if exists partner_reviews_update on partners.partner_reviews;
@@ -445,6 +485,8 @@ create policy partner_reviews_read   on partners.partner_reviews for select usin
 create policy partner_reviews_write  on partners.partner_reviews for insert with check (auth.uid() = user_id);
 create policy partner_reviews_update on partners.partner_reviews for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy partner_reviews_delete on partners.partner_reviews for delete using (auth.uid() = user_id);
+drop policy if exists partner_reviews_admin_delete on partners.partner_reviews;
+create policy partner_reviews_admin_delete on partners.partner_reviews for delete using (members.is_admin());
 
 -- ── 6. 조회용 뷰 (작성자 닉네임 · 집계 포함) ────────────────────
 create or replace view community.posts_view
@@ -480,6 +522,13 @@ with (security_invoker = true) as
 select r.*, pr.nick as author
 from community.product_reviews r
 left join members.profiles pr on pr.id = r.user_id;
+
+-- 신고함 (security_invoker — 운영자는 전체, 일반 회원은 본인 신고만 보임)
+create or replace view community.reports_view
+with (security_invoker = true) as
+select r.*, pr.nick as reporter
+from community.reports r
+left join members.profiles pr on pr.id = r.reporter_id;
 
 create or replace view partners.partners_view
 with (security_invoker = true) as

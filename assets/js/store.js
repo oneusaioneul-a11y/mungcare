@@ -295,6 +295,7 @@ async function hydrate() {
   cloudUser = {
     id: u.id, email: u.email,
     nick: profile?.nick || u.user_metadata?.nick || '집사',
+    role: profile?.role || 'user',
     consents: consents.map(c => ({ doc: c.doc, version: c.version, agreedAt: c.agreed_at })),
     createdAt: u.created_at
   };
@@ -646,6 +647,89 @@ export const partners = {
   }
 };
 
+/* ── 운영자 도구 — 신고 처리 · 파트너 확인 · 회원 현황 ─────────────
+   승격은 앱에 없음: cloud 는 Table Editor 에서 members.profiles.role='admin',
+   local(개발)은 _debug.makeAdmin(email). 서버 강제는 RLS(members.is_admin())가 담당. */
+const REPORT_TABLE = { post: 'posts', comment: 'comments', review: 'product_reviews', chat: 'chat_messages' };
+let adminReports = [];   // 세션 내 사본 (localStorage 미저장)
+
+export const admin = {
+  isAdmin() { return auth.current()?.role === 'admin'; },
+  requireAdmin() { if (!this.isAdmin()) throw new Error('운영자 계정이 아니에요.'); },
+
+  reports(status) {
+    return status ? adminReports.filter(r => r.status === status) : [...adminReports];
+  },
+  async loadReports() {
+    this.requireAdmin();
+    if (MODE !== 'cloud') throw new Error('신고함은 서버 연결(cloud 모드)에서만 쓸 수 있어요.');
+    adminReports = await C.loadReports();
+    return this.reports();
+  },
+  async setReportStatus(id, status) {
+    this.requireAdmin();
+    const r = adminReports.find(x => x.id === id); if (!r) return;
+    r.status = status;
+    r.resolvedAt = status === 'open' ? null : new Date().toISOString();
+    if (MODE === 'cloud') await C.updateReport(id, status);
+  },
+
+  /** 신고 대상 원문 찾기 (화면 미리보기용 — 세션에 로드된 사본에서 탐색) */
+  findTarget(targetType, targetId) {
+    const cm = state.community;
+    if (targetType === 'post') return cm.posts?.find(p => p.id === targetId)?.title || null;
+    if (targetType === 'comment') {
+      for (const p of cm.posts || []) {
+        const c = (p.comments || []).find(c => c.id === targetId);
+        if (c) return c.body;
+      }
+      return null;
+    }
+    if (targetType === 'chat') return cm.chat?.find(m => m.id === targetId)?.body || null;
+    if (targetType === 'review') {
+      for (const rs of Object.values(cm.reviews || {})) {
+        const r = rs.find(r => r.id === targetId);
+        if (r) return r.body;
+      }
+      return null;
+    }
+    if (targetType === 'partner') return partners.get(targetId)?.name || null;
+    return null;
+  },
+
+  /** 신고된 콘텐츠 삭제 (partner 는 삭제 대상 아님 — verified 해제로 대응) */
+  async removeTarget(targetType, targetId) {
+    this.requireAdmin();
+    const table = REPORT_TABLE[targetType];
+    if (!table) throw new Error('이 종류는 삭제로 처리할 수 없어요.');
+    if (MODE !== 'cloud') throw new Error('서버 연결이 필요한 기능이에요.');
+    await C.remove(table, targetId);
+    // 세션 사본에서도 지워 화면에 바로 반영
+    const cm = state.community;
+    if (targetType === 'post') cm.posts = (cm.posts || []).filter(p => p.id !== targetId);
+    if (targetType === 'comment') (cm.posts || []).forEach(p => { p.comments = (p.comments || []).filter(c => c.id !== targetId); });
+    if (targetType === 'chat') cm.chat = (cm.chat || []).filter(m => m.id !== targetId);
+    if (targetType === 'review') Object.keys(cm.reviews || {}).forEach(k => { cm.reviews[k] = cm.reviews[k].filter(r => r.id !== targetId); });
+    persist();
+  },
+
+  async setPartnerVerified(partnerId, verified) {
+    this.requireAdmin();
+    const p = partners.get(partnerId); if (!p) throw new Error('업체를 찾을 수 없어요.');
+    p.verified = !!verified;
+    if (MODE === 'cloud') await C.setPartnerVerified(partnerId, !!verified);
+    persist();
+  },
+
+  async members() {
+    this.requireAdmin();
+    if (MODE === 'cloud') return C.loadProfiles();
+    return Object.values(state.users).map(u => ({
+      id: u.id, nick: u.nick, role: u.role || 'user', createdAt: u.createdAt, email: u.email
+    }));
+  }
+};
+
 /* ── 백업 / 복원 (로컬 모드용. 클라우드에서도 내려받기는 됩니다) ── */
 export const backup = {
   export() {
@@ -682,4 +766,14 @@ export const backup = {
   }
 };
 
-export const _debug = { state: () => state, reset() { state = blank(); persist(); } };
+export const _debug = {
+  state: () => state,
+  reset() { state = blank(); persist(); },
+  /** 로컬(개발) 모드 전용 운영자 승격 — cloud 는 Supabase Table Editor 에서 role 변경 */
+  makeAdmin(email) {
+    if (MODE === 'cloud') throw new Error('cloud 모드에서는 DB에서 role 을 바꿔주세요.');
+    const u = state.users[String(email).toLowerCase()];
+    if (!u) throw new Error('없는 계정이에요.');
+    u.role = 'admin'; persist();
+  }
+};
