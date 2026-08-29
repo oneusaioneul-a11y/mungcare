@@ -5,7 +5,7 @@
     "크롤러는 robots.txt를 존중하며, 페이지에 공개된 schema.org JSON-LD 구조화 데이터만 읽습니다.",
     "id 는 data/products.json 의 items[].id 와 일치해야 갱신됩니다."
   ],
-  "userAgent": "MungCareBot/1.0 (+https://github.com/OWNER/REPO; 반려견 용품 정보 수집)",
+  "userAgent": "MungCareBot/1.0 (+https://mungcare.vercel.app; dog-supplies info bot)",
   "delayMs": 1500,
   "targets": []
 }

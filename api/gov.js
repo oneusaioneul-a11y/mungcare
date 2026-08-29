@@ -64,10 +64,19 @@ function normalize(json) {
   };
 }
 
+/* 환경변수에 Encoding 키든 Decoding 키든 넣어도 동작하도록 정리합니다.
+   Decoding 키(+, /, = 포함)를 그대로 URL에 붙이면 포털이 코드 30
+   (등록되지 않은 서비스키)을 돌려줍니다. '%'가 있으면 이미 인코딩된 키입니다.
+   앞뒤 공백·개행은 복사 실수이므로 제거합니다. */
+function normalizeKey(raw) {
+  const k = String(raw || '').trim();
+  return k.includes('%') ? k : encodeURIComponent(k);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  const key = process.env.DATA_GO_KR_KEY;
+  const key = normalizeKey(process.env.DATA_GO_KR_KEY);
   if (!key) {
     res.status(503).json({
       ok: false,

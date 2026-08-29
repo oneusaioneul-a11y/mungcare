@@ -37,7 +37,16 @@ if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   exit 1
 fi
 
-python3 -m http.server "$PORT" >/dev/null 2>&1 &
+# 기본 http.server 는 Cache-Control 을 안 보내서, 브라우저가 옛 JS/CSS 를
+# 하루 가까이 재사용합니다(고쳐도 화면이 안 바뀌는 원인). 개발용이니 no-store 로 끕니다.
+python3 - "$PORT" <<'PY' >/dev/null 2>&1 &
+import http.server, sys
+class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store')
+        super().end_headers()
+http.server.ThreadingHTTPServer(('', int(sys.argv[1])), NoCacheHandler).serve_forever()
+PY
 echo $! > "$PIDFILE"
 
 # 서버가 뜰 때까지 잠깐 대기

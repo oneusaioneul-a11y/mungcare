@@ -106,7 +106,8 @@ async function main() {
     return;
   }
 
-  const ua = src.userAgent || 'MungCareBot/1.0';
+  // HTTP 헤더는 Latin-1 만 허용 — 한글이 섞이면 fetch 가 던지므로 정리합니다
+  const ua = (src.userAgent || '').replace(/[^\x20-\x7E]/g, '').trim() || 'MungCareBot/1.0';
   let updated = 0, skipped = 0;
 
   for (const t of targets) {

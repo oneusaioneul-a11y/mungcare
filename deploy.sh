@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 SITE="https://mungcare.vercel.app"
 
 echo "▸ 배포 전 검사"
-for f in $(find assets/js tools -name '*.js' -o -name '*.mjs'); do
+for f in $(find assets/js api tools -name '*.js' -o -name '*.mjs'); do
   node --check "$f" >/dev/null || { echo "  ✗ 문법 오류: $f"; exit 1; }
 done
 node tools/test.mjs >/dev/null || { echo "  ✗ 로직 테스트 실패 — tools/test.mjs 확인"; exit 1; }

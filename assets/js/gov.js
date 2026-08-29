@@ -23,6 +23,11 @@ async function call(service, params = {}, { fresh = false } = {}) {
     throw new Error('서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요.');
   }
 
+  /* serve.sh(정적 서버)에는 /api 가 없어서 404가 납니다 — 원인을 그대로 알려줍니다 */
+  if (res.status === 404 && ['localhost', '127.0.0.1'].includes(location.hostname)) {
+    throw new Error('로컬 정적 서버에는 공공데이터 프록시(/api)가 없어요. vercel dev 로 실행하거나 배포된 사이트에서 확인해주세요.');
+  }
+
   // 502 HTML 오류 페이지 등 JSON 이 아닌 응답도 안전하게 처리합니다
   const data = (await res.json().catch(() => null))
             || { ok: false, error: `서버가 예상과 다른 응답을 보냈어요. (HTTP ${res.status})` };
@@ -52,6 +57,9 @@ export const shelter = {
 /** 서비스키 상태 진단 */
 export async function status() {
   const res = await fetch('/api/gov-status', { cache: 'no-store' });
+  if (res.status === 404 && ['localhost', '127.0.0.1'].includes(location.hostname)) {
+    throw new Error('로컬 정적 서버에는 공공데이터 프록시(/api)가 없어요. vercel dev 로 실행하거나 배포된 사이트에서 확인해주세요.');
+  }
   return res.json();
 }
 

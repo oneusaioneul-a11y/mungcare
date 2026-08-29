@@ -75,11 +75,12 @@ export function walkGoal(sizeKey, ageY) {
 export function vaccinePlan(dog, records, VAX) {
   const out = [];
   const birth = dog?.birth;
+  const ageY = ageYears(birth);
   for (const v of VAX.core) {
     const done = records.filter(r => r.code === v.code).sort((a, b) => a.date.localeCompare(b.date));
     const last = done[done.length - 1];
-    let due = null, stage = '';
-    if (done.length < v.puppy.length && birth) {
+    let due = null, stage = '', needsHistory = false;
+    if (ageY != null && ageY < 1 && done.length < v.puppy.length) {
       const wk = v.puppy[done.length];
       due = addDays(birth, wk * 7);
       stage = `기초 ${done.length + 1}차 (생후 ${wk}주)`;
@@ -88,10 +89,15 @@ export function vaccinePlan(dog, records, VAX) {
       stage = '연간 추가 접종';
     } else if (!birth) {
       stage = '생년월일 등록 필요';
+    } else {
+      /* 성견인데 이력이 하나도 없으면 "기한 초과" 대신 이력 등록을 권합니다.
+         퍼피 기초 스케줄을 성견에 적용하면 수년 지난 경고만 쌓입니다. */
+      stage = '과거 접종 이력 등록 필요';
+      needsHistory = true;
     }
     out.push({
       code: v.code, name: v.name, protects: v.protects, required: v.required,
-      count: done.length, total: v.puppy.length, last: last?.date || null, due, stage,
+      count: done.length, total: v.puppy.length, last: last?.date || null, due, stage, needsHistory,
       overdue: due ? daysBetween(due, today()) > 0 : false,
       dday: due ? daysBetween(today(), due) : null
     });
@@ -149,6 +155,11 @@ export function buildAlerts({ dog, vax, prev, meds, weights, allergies, walks })
     else if (v.dday <= 14) a.push({ level: 'warn', icon: '💉', title: `${v.name} 접종 예정`,
       body: `${v.stage} · ${v.due}`, amt: `D-${v.dday}`, to: '#/vaccine' });
   });
+
+  const noHistory = vax.filter(v => v.needsHistory);
+  if (noHistory.length) a.push({ level: 'info', icon: '💉', title: '과거 접종 이력을 등록해주세요',
+    body: noHistory.map(v => v.name).join(', ') + ' — 마지막으로 맞은 날짜만 넣으면 다음 일정을 계산해드려요.',
+    amt: `${noHistory.length}건`, to: '#/vaccine' });
 
   prev.forEach(p => {
     if (!p.last) a.push({ level: 'info', icon: '🛡️', title: `${p.name} 기록 없음`,

@@ -102,6 +102,7 @@ export default {
 };
 
 function statusChip(x) {
+  if (x.needsHistory) return '<span class="chip info">이력 등록 필요</span>';
   if (!x.last && !x.due) return '<span class="chip">기록 없음</span>';
   if (x.overdue) return `<span class="chip bad">${x.dday != null ? Math.abs(x.dday) + '일 지남' : '기한 초과'}</span>`;
   if (x.dday != null && x.dday <= 14) return `<span class="chip warn">D-${x.dday}</span>`;

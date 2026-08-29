@@ -7,11 +7,17 @@ const CHECKS = [
   { name: '동물병원 표준',  service: 'hospital', path: '/1471000/AnimalHospitalService/getAnimalHospitalList' }
 ];
 
+/* api/gov.js 와 동일 — Decoding 키를 넣으면 코드 30이 나므로 인코딩을 맞춰줍니다. */
+function normalizeKey(raw) {
+  const k = String(raw || '').trim();
+  return k.includes('%') ? k : encodeURIComponent(k);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
 
-  const key = process.env.DATA_GO_KR_KEY;
+  const key = normalizeKey(process.env.DATA_GO_KR_KEY);
   if (!key) { res.status(503).json({ ok: false, error: '서비스키가 설정되지 않았어요.' }); return; }
 
   const results = await Promise.all(CHECKS.map(async c => {

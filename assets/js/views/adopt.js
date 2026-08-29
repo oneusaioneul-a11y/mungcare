@@ -8,7 +8,7 @@ const STATE = {
   sido: '', sigungu: '', kind: '', state: 'notice',
   days: 30, page: 1, rows: 24,
   sidoList: null, sigunguList: null, kindList: null,
-  result: null, loading: false, error: null, checked: false
+  result: null, loading: false, error: null
 };
 
 const PROCESS = [
@@ -23,7 +23,8 @@ export default {
   async mount(root, ctx) {
     this.root = root; this.ctx = ctx;
     this.paint();
-    if (!STATE.checked) { STATE.checked = true; await this.loadRefs(); }
+    /* 목록은 성공했을 때만 채워지므로, 실패했다면 다시 들어올 때 재시도합니다 */
+    if (!STATE.sidoList || !STATE.kindList) await this.loadRefs();
     if (!STATE.result && !STATE.error) await this.search();
   },
 
@@ -209,7 +210,7 @@ export default {
             </tbody></table></div>`,
           onSubmit: () => {}
         });
-      } catch { toast('상태를 확인하지 못했어요.'); }
+      } catch (err) { toast(err?.message || '상태를 확인하지 못했어요.'); }
     });
 
     root.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => {

@@ -226,6 +226,11 @@ export default {
         }
       });
     });
-    root.querySelectorAll('[data-del-weight]').forEach(b => b.addEventListener('click', () => ctx.weights.remove(b.dataset.delWeight)));
+    root.querySelectorAll('[data-del-weight]').forEach(b => b.addEventListener('click', () => {
+      ctx.weights.remove(b.dataset.delWeight);
+      /* 프로필의 현재 체중도 남은 기록 중 최신값으로 맞춥니다 */
+      const latest = ctx.weights.list('date')[0];
+      if (latest && latest.kg !== d.weight) dogs.update(d.id, { weight: latest.kg });
+    }));
   }
 };
