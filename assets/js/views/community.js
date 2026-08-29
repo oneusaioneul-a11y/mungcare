@@ -5,10 +5,12 @@ import { ICONS } from '../icons.js';
 
 const KINDS = [
   { k: '', l: '전체' }, { k: 'free', l: '수다' }, { k: 'question', l: '궁금해요' },
-  { k: 'request', l: '이거 어때요' }, { k: 'recipe', l: '레시피' }, { k: 'tip', l: '꿀팁' }
+  { k: 'request', l: '이거 어때요' }, { k: 'recipe', l: '레시피' }, { k: 'tip', l: '꿀팁' },
+  { k: 'suggest', l: '제안·의견' }
 ];
-const LABEL = { free: '수다', question: '궁금해요', request: '이거 어때요', recipe: '레시피', tip: '꿀팁' };
+const LABEL = { free: '수다', question: '궁금해요', request: '이거 어때요', recipe: '레시피', tip: '꿀팁', suggest: '제안·의견' };
 let filter = '';
+let chatOpen = true;
 
 export default {
   head: () => ({ title: '수다방', sub: '집사님들끼리 편하게 이야기 나누는 곳이에요' }),
@@ -16,14 +18,22 @@ export default {
   mount(root, ctx) {
     const me = auth.current();
     const posts = filter ? community.posts(filter) : community.posts();
+    // 제안·의견은 많이 추천받은 순서로 보여줍니다
+    if (filter === 'suggest') posts.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
 
     root.innerHTML = `
     <div class="stack">
+      ${chatCard(me)}
+
       <div class="row">
         <div class="seg">${KINDS.map(k => `<button class="${k.k === filter ? 'on' : ''}" data-k="${k.k}">${k.l}</button>`).join('')}</div>
         <div class="spacer"></div>
         <button class="btn btn-sm btn-primary" data-write>✏️ 이야기 남기기</button>
       </div>
+
+      ${filter === 'suggest' ? `<div class="alert info"><span class="ai">💡</span><span>
+        <b>서비스나 반려 생활에 대한 제안·의견을 나눠요.</b><br>
+        <span style="opacity:.85">공감하면 👍 추천을, 얼마나 좋은 제안인지는 ★ 별점으로 남겨주세요. 추천 많은 순서로 올라와요.</span></span></div>` : ''}
 
       ${posts.length ? `<div class="stack" style="gap:12px">${posts.map(p => post(p, me)).join('')}</div>`
         : `<div class="card">${empty(ICONS.chat, '아직 조용하네요. 첫 이야기를 들려주세요!',
@@ -55,6 +65,20 @@ export default {
     })));
 
     root.querySelectorAll('[data-like]').forEach(b => b.addEventListener('click', () => community.toggleLike(b.dataset.like)));
+    root.querySelectorAll('[data-rate] [data-star]').forEach(s => s.addEventListener('click', () => {
+      community.rate(s.closest('[data-rate]').dataset.rate, +s.dataset.star);
+    }));
+
+    /* 라운지 대화창 */
+    root.querySelector('[data-chat-toggle]')?.addEventListener('click', () => { chatOpen = !chatOpen; this.mount(root, ctx); });
+    root.querySelector('[data-chat-form]')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const inp = e.target.querySelector('input[name=body]');
+      try { if (community.chatSend(inp.value)) inp.value = ''; } catch (err) { toast(err.message); }
+    });
+    root.querySelectorAll('[data-delchat]').forEach(b => b.addEventListener('click', () => community.chatRemove(b.dataset.delchat)));
+    const log = root.querySelector('[data-chatlog]');
+    if (log) log.scrollTop = log.scrollHeight;
     root.querySelectorAll('[data-report]').forEach(b => b.addEventListener('click', () => modal({
       title: '이 글을 신고할게요',
       body: field('어떤 점이 문제인가요?', textareaEl('reason', { required: true, rows: 3,
@@ -80,6 +104,30 @@ export default {
   }
 };
 
+/* 라운지 대화창 — 글보다 가벼운 한 줄 인사/잡담 (community 영역에 저장) */
+function chatCard(me) {
+  const msgs = community.chat().slice(-30);
+  return `<div class="card">
+    <div class="card-head"><h2>💬 라운지 대화창</h2><div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" data-chat-toggle>${chatOpen ? '접기' : `펼치기${msgs.length ? ` (${msgs.length})` : ''}`}</button></div>
+    ${chatOpen ? `
+      <div style="max-height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0" data-chatlog>
+        ${msgs.length ? msgs.map(m => `
+          <div style="font-size:12.5px;line-height:1.55">
+            <b style="color:var(--ink-2)">${esc(m.author)}</b>
+            <span style="color:var(--ink-3);font-size:11px"> · ${relDate(m.createdAt)}</span>
+            ${me && m.authorId === me.id ? `<button class="btn btn-ghost btn-sm" data-delchat="${esc(m.id)}" style="padding:0 6px;font-size:10.5px">지우기</button>` : ''}
+            <br>${esc(m.body)}
+          </div>`).join('')
+          : '<div style="font-size:12.5px;color:var(--ink-3)">아직 조용해요. 먼저 인사 남겨볼까요? 🐾</div>'}
+      </div>
+      <form class="row" style="margin-top:10px;gap:7px" data-chat-form>
+        <input type="text" name="body" maxlength="500" placeholder="집사님들에게 한마디" style="flex:1" autocomplete="off">
+        <button class="btn btn-sm btn-primary">보내기</button>
+      </form>` : ''}
+  </div>`;
+}
+
 function post(p, me) {
   const liked = !!p.liked;
   return `<div class="post">
@@ -96,8 +144,13 @@ function post(p, me) {
     <div class="pb">${esc(p.body)}</div>
     ${p.tags?.length ? `<div class="row" style="gap:5px;margin-top:9px">${p.tags.map(t => `<span class="chip">#${esc(t)}</span>`).join('')}</div>` : ''}
     <div class="pf">
-      <button class="btn btn-sm ${liked ? 'btn-primary' : ''}" data-like="${esc(p.id)}">👍 ${p.likeCount || 0}</button>
+      <button class="btn btn-sm ${liked ? 'btn-primary' : ''}" data-like="${esc(p.id)}" title="추천">👍 ${p.likeCount || 0}</button>
       <span style="font-size:12px;color:var(--ink-3)">💬 ${p.comments.length}개</span>
+      ${p.kind === 'suggest' ? `
+        <span class="stars pick" data-rate="${esc(p.id)}" title="별점 남기기">${[1, 2, 3, 4, 5].map(i =>
+          `<span data-star="${i}" style="cursor:pointer">${i <= (p.myStars || 0) ? '★' : '☆'}</span>`).join('')}</span>
+        <span style="font-size:12px;color:var(--ink-3)">
+          ${p.ratingCount ? `평균 ★${p.ratingAvg} · ${p.ratingCount}명` : '첫 별점을 남겨주세요'}</span>` : ''}
     </div>
     ${p.comments.map(c => `<div class="cmt">
       <div class="ch"><b style="color:var(--ink-2)">${esc(c.author)}</b> · ${relDate(c.createdAt)}

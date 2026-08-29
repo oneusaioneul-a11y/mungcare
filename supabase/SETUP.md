@@ -16,7 +16,22 @@ Supabase 프로젝트를 하나 만들고 값 두 개만 채우면 정식 회원
 2. 이 저장소의 `supabase/schema.sql` 내용을 **통째로 복사해서 붙여넣고** **Run**
 3. `Success. No rows returned` 가 나오면 끝입니다 (여러 번 실행해도 안전해요)
 
-테이블 16개, RLS 정책 20개, 도배 방지 트리거 2개가 만들어집니다.
+영역별로 분리된 스키마 4개가 만들어집니다.
+
+| 스키마 | 담는 것 |
+|---|---|
+| `members` | 프로필, 개인정보 동의 이력 |
+| `care` | 반려견과 건강 기록 (본인 외 조회 불가) |
+| `community` | 글·댓글·추천·별점·대화창·용품 후기 |
+| `partners` | 동물병원·용품점 계정, 업체 후기 |
+
+## 2-1. 스키마를 API에 노출하기 (중요!)
+
+새 스키마는 기본으로 API 에 노출되지 않아요. 이걸 빼먹으면 로그인 후 모든 요청이 실패합니다.
+
+1. **Project Settings → Data API** 로 이동
+2. **Exposed schemas** 에 `members`, `care`, `community`, `partners` 네 개를 추가하고 저장
+   (`public` 은 그대로 두면 됩니다)
 
 ## 3. 이메일 인증 켜기
 
@@ -68,7 +83,7 @@ export const CONFIG = {
 1. 사이트에서 회원가입 → 메일함에 인증 메일이 오는지
 2. 링크 클릭 → 자동으로 로그인되는지
 3. 아이 등록하고 산책 기록 남긴 뒤, **다른 브라우저에서 로그인**했을 때 그대로 보이는지
-4. Supabase **Table Editor → dogs** 에 행이 들어갔는지
+4. Supabase **Table Editor** 에서 스키마를 `care` 로 바꾸면 **dogs** 에 행이 들어갔는지 (동의 이력은 `members.consents`)
 
 ## 문제가 생기면
 
@@ -78,3 +93,4 @@ export const CONFIG = {
 | 인증 링크를 눌러도 로그인 안 됨 | Redirect URLs 에 해당 주소가 없음 |
 | 기록이 저장 안 되고 토스트로 오류 | SQL 이 일부만 실행됨. `schema.sql` 을 다시 통째로 Run |
 | `column ... does not exist` | 스키마 버전이 앱보다 오래됨. `schema.sql` 다시 실행 |
+| 로그인 직후 모든 요청 실패 / `The schema must be one of ...` | **2-1 단계 누락** — Exposed schemas 에 4개 스키마 추가 |

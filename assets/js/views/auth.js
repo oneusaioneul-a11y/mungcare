@@ -1,11 +1,27 @@
-/* 회원가입 · 로그인 · 비밀번호 찾기 */
+/* 회원가입 · 로그인 · 비밀번호 찾기 · 파트너(사업자) 가입 */
 import { auth, isCloudMode } from '../store.js';
-import { esc, toast } from '../ui.js';
+import { esc, toast, modal } from '../ui.js';
 import { dogIcon } from '../icons.js';
+import { policyHTML } from './privacy.js';
+import { PARTNER_KINDS } from './partners.js';
 
-let mode = 'login';       // login | signup | forgot | recovery | sent
+let mode = 'login';       // login | signup | biz | forgot | recovery | sent
 let sentTo = '';          // 인증/재설정 메일을 보낸 주소
 let sentKind = 'signup';  // signup | reset
+
+/* 개인정보 수집·이용 동의(필수) — 법정 고지 사항을 확인하고 체크합니다 */
+function consentFields(partner = false) {
+  return `
+    <div class="field" style="margin-bottom:14px">
+      <label class="check" style="margin-bottom:7px"><input type="checkbox" name="age14" required>
+        <span>(필수) 만 14세 이상이에요</span></label>
+      <label class="check" style="margin-bottom:7px"><input type="checkbox" name="privacy" required>
+        <span>(필수) 개인정보 수집·이용에 동의해요
+        <button type="button" class="btn btn-ghost btn-sm" data-policy style="padding:1px 7px;font-size:11.5px">내용 보기</button></span></label>
+      ${partner ? `<label class="check"><input type="checkbox" name="partnerTerms" required>
+        <span>(필수) 업체 정보가 디렉터리에 공개되는 것에 동의해요</span></label>` : ''}
+    </div>`;
+}
 
 const HERO = ['bichon', 'maltese', 'poodleCream', 'coton', 'poodle'];
 
@@ -92,6 +108,43 @@ function body() {
       </div>`;
   }
 
+  /* ── 파트너(사업자) 가입 ── */
+  if (mode === 'biz') {
+    return `
+    <div class="auth-box">
+      <h2>파트너로 함께해요! 🤝</h2>
+      <p class="lead">동물병원·용품점 정보가 집사님들에게 소개돼요. 사업자등록번호가 필요해요.</p>
+      <form data-auth-form>
+        <div class="inline">
+          <div class="field"><label>상호명</label>
+            <input type="text" name="bizName" required maxlength="60" placeholder="예: 몽몽동물병원"></div>
+          <div class="field"><label>업종</label>
+            <select name="bizKind">${PARTNER_KINDS.map(k => `<option value="${k.v}">${k.l}</option>`).join('')}</select></div>
+        </div>
+        <div class="field"><label>사업자등록번호</label>
+          <input type="text" name="bizNo" required placeholder="123-45-67890" inputmode="numeric"></div>
+        <div class="inline">
+          <div class="field"><label>지역 (시/도)</label>
+            <input type="text" name="bizRegion" placeholder="예: 서울"></div>
+          <div class="field"><label>전화</label>
+            <input type="text" name="bizTel" placeholder="02-1234-5678"></div>
+        </div>
+        <div class="field"><label>이메일</label>
+          <input type="email" name="email" required placeholder="biz@example.com" autocomplete="username"></div>
+        <div class="inline">
+          <div class="field"><label>비밀번호</label>
+            <input type="password" name="password" required minlength="8" autocomplete="new-password"></div>
+          <div class="field"><label>한 번 더</label>
+            <input type="password" name="password2" required minlength="8" autocomplete="new-password"></div>
+        </div>
+        ${consentFields(true)}
+        <button type="submit" class="btn btn-primary btn-block">파트너 가입할래요!</button>
+      </form>
+      <button class="btn btn-ghost btn-block" style="margin-top:10px" data-mode="login">← 일반 회원으로 들어가기</button>
+      ${notice()}
+    </div>`;
+  }
+
   /* ── 로그인 / 회원가입 ── */
   const isLogin = mode === 'login';
   return `
@@ -114,18 +167,21 @@ function body() {
             placeholder="8자 이상이면 돼요" autocomplete="${isLogin ? 'current-password' : 'new-password'}"></div>
         ${!isLogin ? `<div class="field"><label>한 번 더 적어주세요</label>
           <input type="password" name="password2" required minlength="8" autocomplete="new-password"></div>
-        <label class="check" style="margin-bottom:14px"><input type="checkbox" name="agree" required>
-          <span>아래 저장 방식 안내를 읽었어요</span></label>` : ''}
+        ${consentFields()}` : ''}
         <button type="submit" class="btn btn-primary btn-block">${isLogin ? '들어가기' : '시작할래요!'}</button>
       </form>
 
       ${isLogin && isCloudMode()
         ? `<button class="btn btn-ghost btn-block" style="margin-top:10px" data-mode="forgot">비밀번호를 잊으셨나요?</button>` : ''}
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" data-mode="biz">🏥 동물병원·용품점이신가요? 파트너로 함께하기</button>
       ${notice()}
     </div>`;
 }
 
 export default {
+  /* 로그아웃·계정 삭제 뒤 가입/메일 안내 화면이 남지 않도록 초기 상태로 돌립니다 */
+  reset() { mode = 'login'; sentTo = ''; sentKind = 'signup'; },
+
   mount(root, opts) {
     const { onDone, recovery } = opts;
     if (recovery && mode !== 'recovery') mode = 'recovery';
@@ -135,6 +191,12 @@ export default {
     root.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
       mode = b.dataset.mode;
       this.mount(root, { onDone, recovery: false });
+    }));
+
+    /* 동의 문구의 "내용 보기" — 체크박스를 건드리지 않고 처리방침만 띄웁니다 */
+    root.querySelectorAll('[data-policy]').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      modal({ title: '개인정보처리방침', wide: true, footer: false, body: policyHTML(), onSubmit: () => {} });
     }));
 
     root.querySelector('[data-resend]')?.addEventListener('click', async e => {
@@ -155,7 +217,8 @@ export default {
       try {
         if (mode === 'signup') {
           if (f.password !== f.password2) throw new Error('두 비밀번호가 서로 달라요!');
-          const { needsConfirm } = await auth.signup(f);
+          const consent = { age14: !!f.age14, privacy: !!f.privacy };
+          const { needsConfirm } = await auth.signup({ ...f, consent });
           if (needsConfirm) {
             sentTo = f.email.trim(); sentKind = 'signup'; mode = 'sent';
             this.mount(root, { onDone, recovery: false });
@@ -163,6 +226,22 @@ export default {
           }
           toast('반가워요! 이제 우리 아이를 소개해주세요 🐶');
           location.hash = '#/profile';
+          onDone();
+
+        } else if (mode === 'biz') {
+          if (f.password !== f.password2) throw new Error('두 비밀번호가 서로 달라요!');
+          const { needsConfirm } = await auth.signupPartner({
+            email: f.email, password: f.password,
+            business: { kind: f.bizKind, name: f.bizName, bizNo: f.bizNo, tel: f.bizTel, region: f.bizRegion },
+            consent: { age14: !!f.age14, privacy: !!f.privacy, partnerTerms: !!f.partnerTerms }
+          });
+          if (needsConfirm) {
+            sentTo = f.email.trim(); sentKind = 'signup'; mode = 'sent';
+            this.mount(root, { onDone, recovery: false });
+            return;
+          }
+          toast('파트너 가입을 환영해요! 업체 정보를 다듬어주세요 🤝');
+          location.hash = '#/partners';
           onDone();
 
         } else if (mode === 'login') {

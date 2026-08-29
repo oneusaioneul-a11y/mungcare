@@ -27,9 +27,14 @@ console.log('\n[모드]');
 t('설정이 비었으면 local 모드', S.MODE === 'local', S.MODE);
 
 console.log('\n[인증]');
-const signupResult = await S.auth.signup({ email: 'A@Test.com', password: 'password123', nick: '몽이집사' });
+const CONSENT = { age14: true, privacy: true };
+try { await S.auth.signup({ email: 'noc@test.com', password: 'password123', nick: 'x' }); t('동의 없인 가입 불가', false); }
+catch (e) { t('동의 없인 가입 불가', /14세|동의/.test(e.message), e.message); }
+const signupResult = await S.auth.signup({ email: 'A@Test.com', password: 'password123', nick: '몽이집사', consent: CONSENT });
 t('가입 후 로그인 상태', S.auth.current()?.email === 'a@test.com');
 t('로컬 가입은 이메일 인증 불필요', signupResult.needsConfirm === false);
+t('동의 이력 저장 (privacy+age14)', S.auth.consents().length === 2
+  && S.auth.consents().every(c => c.version === S.PRIVACY_VERSION), JSON.stringify(S.auth.consents()));
 t('평문 비밀번호 미저장', !JSON.stringify(S._debug.state()).includes('password123'));
 await S.auth.logout();
 t('로그아웃', S.auth.current() === null);
@@ -37,7 +42,7 @@ try { await S.auth.login({ email: 'a@test.com', password: 'wrongpass1' }); t('�
 catch { t('오답 거부', true); }
 await S.auth.login({ email: 'a@test.com', password: 'password123' });
 t('정답 로그인', !!S.auth.current());
-try { await S.auth.signup({ email: 'a@test.com', password: 'password123', nick: 'x' }); t('중복 가입 차단', false); }
+try { await S.auth.signup({ email: 'a@test.com', password: 'password123', nick: 'x', consent: CONSENT }); t('중복 가입 차단', false); }
 catch { t('중복 가입 차단', true); }
 
 console.log('\n[반려견]');
@@ -57,8 +62,14 @@ console.log('\n[접종 스케줄]');
 const v = S.col('vaccines', dog.id);
 let plan = H.vaccinePlan(dog, v.raw(), VAX);
 const dhppl = plan.find(p => p.code === 'DHPPL');
-t('기초 1차는 생후 6주', dhppl.due === H.addDays(birth, 42), dhppl.due);
-t('3년 지나 기한 초과', dhppl.overdue === true);
+t('성견+무기록은 기한 초과 대신 이력 등록 안내', dhppl.needsHistory === true && dhppl.due === null && dhppl.overdue === false,
+  JSON.stringify({ due: dhppl.due, overdue: dhppl.overdue }));
+const pupBirth = H.addDays(H.today(), -70);
+const pupPlan = H.vaccinePlan({ birth: pupBirth }, [], VAX).find(p => p.code === 'DHPPL');
+t('퍼피 기초 1차는 생후 6주', pupPlan.due === H.addDays(pupBirth, 42), pupPlan.due);
+t('생후 70일 무접종은 기한 초과', pupPlan.overdue === true && !pupPlan.needsHistory);
+const partial = H.vaccinePlan(dog, [{ code: 'DHPPL', date: H.addDays(H.today(), -100) }], VAX).find(p => p.code === 'DHPPL');
+t('성견+일부 기록은 연간 추가 접종으로', partial.stage === '연간 추가 접종' && partial.due === H.addDays(H.addDays(H.today(), -100), 365), partial.due);
 [6, 8, 10, 12, 14].forEach((w, i) => v.add({ code: 'DHPPL', date: H.addDays(birth, w * 7), label: '종합백신' }));
 plan = H.vaccinePlan(dog, v.raw(), VAX);
 const d2 = plan.find(p => p.code === 'DHPPL');
@@ -91,6 +102,9 @@ const alerts = H.buildAlerts({ dog, vax: plan, prev, meds: meds.raw(), weights: 
 t('재고 부족 알림', alerts.some(a => a.title.includes('재고 부족')));
 t('체중 급변 알림', alerts.some(a => a.title.includes('체중')));
 t('bad가 상위 정렬', alerts[0].level === 'bad');
+t('무기록 접종은 info 안내 1건으로 묶임 (기한 초과 아님)',
+  alerts.filter(a => a.title.includes('접종 이력')).length === 1
+  && !alerts.some(a => a.level === 'bad' && a.title.includes('코로나')));
 
 console.log('\n[커뮤니티/백업]');
 S.community.post({ kind: 'free', title: '안녕하세요', body: '반갑습니다' });
@@ -107,6 +121,50 @@ S.dogs.remove(dog.id);
 t('삭제 확인', S.dogs.all().length === 0);
 S.backup.import(json);
 t('백업 복원', S.dogs.all().length === 1 && S.dogs.all()[0].name === '몽이');
+
+console.log('\n[제안 · 추천 · 별점]');
+const sg = S.community.post({ kind: 'suggest', title: '주말 산책 모임 어때요?', body: '한강에서 만나요' });
+S.community.rate(sg.id, 5);
+S.community.rate(sg.id, 4);   // 같은 사람이 다시 누르면 갱신
+const sg2 = S.community.get(sg.id);
+t('별점은 1인 1표 갱신', sg2.ratingCount === 1 && sg2.ratingAvg === 4 && sg2.myStars === 4,
+  JSON.stringify({ n: sg2.ratingCount, avg: sg2.ratingAvg, my: sg2.myStars }));
+S.community.toggleLike(sg.id);
+t('제안 추천(👍) 집계', S.community.get(sg.id).likeCount === 1);
+
+console.log('\n[대화창]');
+S.community.chatSend('안녕하세요, 몽이 집사예요!');
+t('대화 전송', S.community.chat().length === 1 && S.community.chat()[0].body.includes('몽이'));
+try { S.community.chatSend('x'.repeat(501)); t('500자 제한', false); } catch { t('500자 제한', true); }
+S.community.chatRemove(S.community.chat()[0].id);
+t('내 대화 삭제', S.community.chat().length === 0);
+
+console.log('\n[파트너]');
+await S.auth.logout();
+try {
+  await S.auth.signupPartner({ email: 'vet@test.com', password: 'password123',
+    business: { kind: 'hospital', name: '몽몽동물병원', bizNo: '123-45-67890' }, consent: CONSENT });
+  t('파트너 약관 미동의 거부', false);
+} catch (e) { t('파트너 약관 미동의 거부', e.message.includes('파트너'), e.message); }
+try {
+  await S.auth.signupPartner({ email: 'bad@test.com', password: 'password123',
+    business: { kind: 'store', name: '가게', bizNo: '12-345' },
+    consent: { ...CONSENT, partnerTerms: true } });
+  t('사업자번호 형식 검증', false);
+} catch (e) { t('사업자번호 형식 검증', e.message.includes('사업자등록번호'), e.message); }
+await S.auth.signupPartner({ email: 'vet@test.com', password: 'password123',
+  business: { kind: 'hospital', name: '몽몽동물병원', bizNo: '123-45-67890', region: '서울' },
+  consent: { ...CONSENT, partnerTerms: true } });
+const myBiz = S.partners.mine();
+t('파트너 가입 · 디렉터리 등록', S.partners.list().length === 1 && myBiz?.name === '몽몽동물병원' && myBiz.verified === false);
+t('파트너 동의 이력 3건', S.auth.consents().length === 3 && S.auth.consents().some(c => c.doc === 'partner_terms'));
+try { S.partners.review(myBiz.id, { stars: 5, body: '셀프 칭찬' }); t('내 업체 후기 차단', false); }
+catch { t('내 업체 후기 차단', true); }
+await S.auth.login({ email: 'a@test.com', password: 'password123' });
+S.partners.review(myBiz.id, { stars: 5, body: '친절하고 꼼꼼해요' });
+S.partners.review(myBiz.id, { stars: 4, body: '수정' });
+t('업체 별점도 1인 1건 갱신', S.partners.score(myBiz.id).n === 1 && S.partners.score(myBiz.id).avg === 4);
+t('업종 필터', S.partners.list('hospital').length === 1 && S.partners.list('store').length === 0);
 
 console.log('\n[식별자]');
 t('레코드 id 가 UUID 형식', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(S.uid()), S.uid());

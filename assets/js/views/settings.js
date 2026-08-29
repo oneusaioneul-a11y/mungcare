@@ -1,6 +1,7 @@
 /* 설정 — 계정, 화면, 데이터 백업, 커뮤니티 연동 */
 import { auth, backup, settings, isCloudMode } from '../store.js';
 import { esc, fmtDate, modal, field, inputEl, toast, confirmModal } from '../ui.js';
+import authView from './auth.js';
 
 export default {
   head: () => ({ title: '설정', sub: '계정이랑 백업, 연동 같은 것들' }),
@@ -37,6 +38,15 @@ export default {
           <p style="font-size:12.5px;color:var(--ink-3);margin:14px 0 0">
             글꼴은 에스코어드림을 써요. 인터넷이 느리면 기본 글꼴로 먼저 보였다가 스르륵 바뀔 거예요.</p>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>🔒 개인정보</h2><div class="spacer"></div>
+          <a class="btn btn-sm" href="#/privacy">처리방침 · 내 동의 내역</a></div>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:0">
+          가입할 때 동의하신 내용은 언제든 다시 볼 수 있어요.
+          동의를 철회하고 싶으시면 아래 <b>[${isCloudMode() ? '우리 아이 기록 다 지우기' : '계정이랑 기록 다 지우기'}]</b>로
+          모든 기록을 파기할 수 있어요.</p>
       </div>
 
       <div class="card">
@@ -154,7 +164,7 @@ export default {
         isCloudMode()
           ? '등록한 아이와 밥·약·산책·병원 기록이 서버에서 전부 사라지고 로그아웃돼요. 되돌릴 수 없는데, 정말 지울까요?'
           : '계정이랑 우리 아이 기록이 전부 사라져요. 되돌릴 수 없는데, 정말 지울까요?',
-        async () => { await backup.wipeAccount(); toast('지웠어요.'); location.hash = '#/'; }));
+        async () => { await backup.wipeAccount(); authView.reset(); toast('지웠어요.'); location.hash = '#/'; }));
 
     root.querySelector('[data-gov-check]')?.addEventListener('click', async e => {
       const box = root.querySelector('#gov-status');
@@ -174,8 +184,8 @@ export default {
             <td>${c.ok ? '<span class="chip ok">정상</span>' : `<span class="chip bad">코드 ${esc(c.code || '?')}</span>`}</td>
             <td style="color:var(--ink-3)">${esc(c.message || (c.ok ? c.totalCount + '건' : ''))}</td></tr>`).join('')}
           </tbody></table></div>`;
-      } catch {
-        box.textContent = '확인하지 못했어요. 잠시 후 다시 시도해주세요.';
+      } catch (err) {
+        box.textContent = err?.message || '확인하지 못했어요. 잠시 후 다시 시도해주세요.';
       } finally { e.target.disabled = false; }
     });
 

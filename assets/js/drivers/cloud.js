@@ -23,6 +23,22 @@ export function client() {
   return sb;
 }
 
+/* ── 테이블 → 스키마 라우팅 (영역별 DB 분리) ───────────────────── */
+const SCHEMA = {
+  profiles: 'members', consents: 'members',
+  dogs: 'care', meals: 'care', walks: 'care', meds: 'care', vaccines: 'care',
+  medical: 'care', allergies: 'care', recipes: 'care', weights: 'care', settings: 'care',
+  posts: 'community', comments: 'community', post_likes: 'community',
+  post_ratings: 'community', chat_messages: 'community',
+  product_reviews: 'community', reports: 'community',
+  posts_view: 'community', comments_view: 'community', chat_view: 'community', reviews_view: 'community',
+  partners: 'partners', partner_reviews: 'partners',
+  partners_view: 'partners', partner_reviews_view: 'partners'
+};
+export function from(table) {
+  return client().schema(SCHEMA[table] || 'public').from(table);
+}
+
 /* ── 컬럼 이름 매핑 (앱: camelCase ↔ DB: snake_case) ───────────── */
 const MAPS = {
   dogs:      { adoptedAt: 'adopted_at', foodName: 'food_name', foodKcal: 'food_kcal',
@@ -33,6 +49,10 @@ const MAPS = {
   meals: {}, walks: {}, vaccines: {}, medical: {}, weights: {},
   posts:     { productId: 'product_id', likeCount: 'like_count', commentCount: 'comment_count' },
   comments:  { postId: 'post_id' },
+  post_ratings: { postId: 'post_id' },
+  chat_messages: {},
+  partners:  { bizNo: 'biz_no' },
+  partner_reviews: { partnerId: 'partner_id' },
   reports:   {}
 };
 const COMMON = { createdAt: 'created_at', dogId: 'dog_id', userId: 'user_id' };
@@ -132,27 +152,37 @@ function translate(msg = '') {
 }
 export { translate };
 
-/* ── 프로필 ───────────────────────────────────────────────────── */
+/* ── 프로필 · 개인정보 동의 (members 스키마) ──────────────────── */
 export async function loadProfile(userId) {
-  const { data, error } = await client().from('profiles').select('*').eq('id', userId).maybeSingle();
+  const { data, error } = await from('profiles').select('*').eq('id', userId).maybeSingle();
   if (error) throw new Error(translate(error.message));
   return data;
 }
 export async function updateNick(userId, nick) {
-  const { error } = await client().from('profiles')
+  const { error } = await from('profiles')
     .update({ nick, updated_at: new Date().toISOString() }).eq('id', userId);
   if (error) throw new Error(translate(error.message));
+}
+/** 동의 이력 저장 — rows: [{user_id, doc, version}] */
+export async function addConsents(rows) {
+  const { error } = await from('consents').insert(rows);
+  if (error) throw new Error(translate(error.message));
+}
+export async function loadConsents(userId) {
+  const { data, error } = await from('consents').select('*')
+    .eq('user_id', userId).order('agreed_at', { ascending: false });
+  if (error) throw new Error(translate(error.message));
+  return data || [];
 }
 
 /* ── 개인 데이터 일괄 로드 ────────────────────────────────────── */
 const RECORD_TABLES = ['meals', 'walks', 'meds', 'vaccines', 'medical', 'allergies', 'recipes', 'weights'];
 
 export async function loadAll(userId) {
-  const c = client();
   const [dogsRes, settingsRes, ...rest] = await Promise.all([
-    c.from('dogs').select('*').order('created_at'),
-    c.from('settings').select('data').eq('user_id', userId).maybeSingle(),
-    ...RECORD_TABLES.map(t => c.from(t).select('*'))
+    from('dogs').select('*').order('created_at'),
+    from('settings').select('data').eq('user_id', userId).maybeSingle(),
+    ...RECORD_TABLES.map(t => from(t).select('*'))
   ]);
   if (dogsRes.error) throw new Error(translate(dogsRes.error.message));
 
@@ -174,30 +204,31 @@ export async function loadAll(userId) {
 
 /* ── 쓰기 ─────────────────────────────────────────────────────── */
 export async function insert(table, obj) {
-  const { error } = await client().from(table).insert(toRow(table, clean(obj)));
+  const { error } = await from(table).insert(toRow(table, clean(obj)));
   if (error) throw new Error(translate(error.message));
 }
 export async function update(table, id, patch) {
-  const { error } = await client().from(table).update(toRow(table, clean(patch))).eq('id', id);
+  const { error } = await from(table).update(toRow(table, clean(patch))).eq('id', id);
   if (error) throw new Error(translate(error.message));
 }
 export async function remove(table, id) {
-  const { error } = await client().from(table).delete().eq('id', id);
+  const { error } = await from(table).delete().eq('id', id);
   if (error) throw new Error(translate(error.message));
 }
 export async function saveSettings(userId, data) {
-  const { error } = await client().from('settings')
+  const { error } = await from('settings')
     .upsert({ user_id: userId, data, updated_at: new Date().toISOString() });
   if (error) throw new Error(translate(error.message));
 }
 
 /* ── 커뮤니티 ─────────────────────────────────────────────────── */
 export async function loadCommunity(userId) {
-  const c = client();
-  const [postsRes, likesRes, reviewsRes] = await Promise.all([
-    c.from('posts_view').select('*').order('created_at', { ascending: false }).limit(200),
-    userId ? c.from('post_likes').select('post_id').eq('user_id', userId) : Promise.resolve({ data: [] }),
-    c.from('reviews_view').select('*').order('created_at', { ascending: false }).limit(500)
+  const [postsRes, likesRes, ratingsRes, reviewsRes, chatRes] = await Promise.all([
+    from('posts_view').select('*').order('created_at', { ascending: false }).limit(200),
+    userId ? from('post_likes').select('post_id').eq('user_id', userId) : Promise.resolve({ data: [] }),
+    userId ? from('post_ratings').select('post_id, stars').eq('user_id', userId) : Promise.resolve({ data: [] }),
+    from('reviews_view').select('*').order('created_at', { ascending: false }).limit(500),
+    from('chat_view').select('*').order('created_at', { ascending: false }).limit(100)
   ]);
   if (postsRes.error) throw new Error(translate(postsRes.error.message));
 
@@ -205,14 +236,17 @@ export async function loadCommunity(userId) {
     id: p.id, kind: p.kind, title: p.title, body: p.body, tags: p.tags || [],
     productId: p.product_id, author: p.author || '알 수 없음', authorId: p.user_id,
     createdAt: p.created_at, likeCount: Number(p.like_count) || 0,
-    commentCount: Number(p.comment_count) || 0, liked: false, comments: []
+    commentCount: Number(p.comment_count) || 0, liked: false, comments: [],
+    ratingCount: Number(p.rating_count) || 0,
+    ratingAvg: p.rating_avg != null ? Number(p.rating_avg) : null, myStars: null
   }));
 
   const liked = new Set((likesRes.data || []).map(r => r.post_id));
-  posts.forEach(p => { p.liked = liked.has(p.id); });
+  const myRating = new Map((ratingsRes.data || []).map(r => [r.post_id, r.stars]));
+  posts.forEach(p => { p.liked = liked.has(p.id); p.myStars = myRating.get(p.id) ?? null; });
 
   if (posts.length) {
-    const { data: cs } = await c.from('comments_view').select('*')
+    const { data: cs } = await from('comments_view').select('*')
       .in('post_id', posts.map(p => p.id)).order('created_at');
     const byPost = new Map(posts.map(p => [p.id, p]));
     (cs || []).forEach(x => byPost.get(x.post_id)?.comments.push({
@@ -229,7 +263,12 @@ export async function loadCommunity(userId) {
     });
   });
 
-  return { posts, reviews };
+  const chat = (chatRes.data || []).map(m => ({
+    id: m.id, body: m.body, author: m.author || '알 수 없음',
+    authorId: m.user_id, createdAt: m.created_at
+  })).reverse();
+
+  return { posts, reviews, chat };
 }
 
 export async function addPost(p)         { return insert('posts', p); }
@@ -237,17 +276,59 @@ export async function delPost(id)        { return remove('posts', id); }
 export async function addComment(row)    { return insert('comments', row); }
 export async function delComment(id)     { return remove('comments', id); }
 export async function like(postId, userId) {
-  const { error } = await client().from('post_likes').insert({ post_id: postId, user_id: userId });
+  const { error } = await from('post_likes').insert({ post_id: postId, user_id: userId });
   if (error && !String(error.message).includes('duplicate')) throw new Error(translate(error.message));
 }
 export async function unlike(postId, userId) {
-  const { error } = await client().from('post_likes').delete().eq('post_id', postId).eq('user_id', userId);
+  const { error } = await from('post_likes').delete().eq('post_id', postId).eq('user_id', userId);
   if (error) throw new Error(translate(error.message));
 }
+export async function ratePost(postId, userId, stars) {
+  const { error } = await from('post_ratings')
+    .upsert({ post_id: postId, user_id: userId, stars }, { onConflict: 'post_id,user_id' });
+  if (error) throw new Error(translate(error.message));
+}
+export async function unratePost(postId, userId) {
+  const { error } = await from('post_ratings').delete().eq('post_id', postId).eq('user_id', userId);
+  if (error) throw new Error(translate(error.message));
+}
+export async function sendChat(row) { return insert('chat_messages', row); }
+export async function delChat(id)   { return remove('chat_messages', id); }
 export async function upsertReview(row) {
-  const { error } = await client().from('product_reviews')
+  const { error } = await from('product_reviews')
     .upsert(row, { onConflict: 'product_id,user_id' });
   if (error) throw new Error(translate(error.message));
 }
 export async function delReview(id) { return remove('product_reviews', id); }
 export async function report(row)   { return insert('reports', row); }
+
+/* ── 파트너 (partners 스키마 — 동물병원·용품점) ───────────────── */
+export async function loadPartners() {
+  const { data, error } = await from('partners_view').select('*').order('created_at', { ascending: false }).limit(300);
+  if (error) throw new Error(translate(error.message));
+  return (data || []).map(p => ({
+    id: p.id, kind: p.kind, name: p.name, bizNo: p.biz_no, tel: p.tel, region: p.region,
+    addr: p.addr, url: p.url, intro: p.intro, verified: p.verified, createdAt: p.created_at,
+    reviewCount: Number(p.review_count) || 0,
+    reviewAvg: p.review_avg != null ? Number(p.review_avg) : null
+  }));
+}
+export async function upsertPartner(row) {
+  const { error } = await from('partners').upsert(toRow('partners', clean(row)), { onConflict: 'id' });
+  if (error) throw new Error(translate(error.message));
+}
+export async function loadPartnerReviews(partnerId) {
+  const { data, error } = await from('partner_reviews_view').select('*')
+    .eq('partner_id', partnerId).order('created_at', { ascending: false }).limit(200);
+  if (error) throw new Error(translate(error.message));
+  return (data || []).map(r => ({
+    id: r.id, stars: r.stars, body: r.body, author: r.author || '알 수 없음',
+    authorId: r.user_id, createdAt: r.created_at
+  }));
+}
+export async function upsertPartnerReview(row) {
+  const { error } = await from('partner_reviews')
+    .upsert(row, { onConflict: 'partner_id,user_id' });
+  if (error) throw new Error(translate(error.message));
+}
+export async function delPartnerReview(id) { return remove('partner_reviews', id); }

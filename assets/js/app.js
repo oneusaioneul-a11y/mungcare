@@ -18,6 +18,8 @@ import risk from './views/risk.js';
 import products from './views/products.js';
 import community from './views/community.js';
 import adopt from './views/adopt.js';
+import partnersView from './views/partners.js';
+import privacyView from './views/privacy.js';
 import settingsView from './views/settings.js';
 
 export const DB = { breeds: null, vaccines: null, products: null };
@@ -26,14 +28,15 @@ const ROUTES = {
   '/': dashboard, '/profile': profile, '/diet': diet, '/recipes': recipes,
   '/meds': meds, '/walk': walk, '/vaccine': vaccine, '/medical': medical,
   '/allergy': allergy, '/risk': risk, '/products': products,
-  '/community': community, '/adopt': adopt, '/settings': settingsView
+  '/community': community, '/adopt': adopt, '/partners': partnersView,
+  '/privacy': privacyView, '/settings': settingsView
 };
 
 const NAV = [
   { group: '우리 아이' },
-  { to: '/', ico: ICONS.home, label: '오늘 하루' },
+  { to: '/', ico: ICONS.home, label: '오늘 하루', alertKey: true },
   { to: '/profile', ico: ICONS.dog, label: '아이 프로필' },
-  { to: '/risk', ico: ICONS.stethos, label: '이맘때 조심할 것', alertKey: true },
+  { to: '/risk', ico: ICONS.stethos, label: '이맘때 조심할 것' },
   { group: '매일매일' },
   { to: '/diet', ico: ICONS.bowl, label: '밥 기록' },
   { to: '/recipes', ico: ICONS.chef, label: '화식 레시피' },
@@ -47,6 +50,7 @@ const NAV = [
   { to: '/products', ico: ICONS.cart, label: '용품 리뷰' },
   { to: '/community', ico: ICONS.chat, label: '수다방' },
   { to: '/adopt', ico: ICONS.heart, label: '유기견 입양' },
+  { to: '/partners', ico: ICONS.hospital, label: '동물병원 · 용품점' },
   { group: '' },
   { to: '/settings', ico: ICONS.gear, label: '설정' }
 ];
@@ -167,7 +171,7 @@ function paint() {
   view.mount(vr, ctx);
 
   root.querySelector('[data-logout]')?.addEventListener('click', async () => {
-    await auth.logout(); location.hash = '#/'; render();
+    await auth.logout(); authView.reset(); location.hash = '#/'; render();
   });
   root.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
     settings.set('theme', settings.get('theme') === 'dark' ? 'light' : 'dark');
@@ -204,7 +208,10 @@ function dogSwitcher(ctx) {
 function applyTheme() {
   let fallback = 'light';
   try { fallback = localStorage.getItem('bc.theme') || 'light'; } catch { /* 저장소 차단 환경 */ }
-  const t = auth.current() ? (settings.get('theme') || 'light') : fallback;
+  const user = auth.current();
+  const t = user ? (settings.get('theme') || 'light') : fallback;
+  /* 로그아웃 후의 인증 화면도 마지막 테마를 따르도록 남겨둡니다 */
+  if (user && t !== fallback) { try { localStorage.setItem('bc.theme', t); } catch { /* 저장소 차단 환경 */ } }
   document.documentElement.setAttribute('data-theme', t);
 }
 

@@ -12,15 +12,20 @@ import { isCloud } from './config.js';
 import * as C from './drivers/cloud.js';
 
 const KEY = 'mungcare.v2';
+const PENDING_KEY = 'mungcare.pending';   // 이메일 인증 대기 중 잠시 보관할 동의·업체 정보
 const listeners = new Set();
 const errorHandlers = new Set();
 
 export const MODE = isCloud() ? 'cloud' : 'local';
 export const isCloudMode = () => MODE === 'cloud';
 
+/* 개인정보처리방침 판번호 — 문구를 고치면 반드시 올리고, 동의도 다시 받으세요 */
+export const PRIVACY_VERSION = '1.0 (2026-08-29)';
+
 const blank = () => ({
   users: {}, session: null, data: {},
-  community: { posts: [], reviews: {} },
+  community: { posts: [], reviews: {}, chat: [] },
+  partners: { list: [], reviews: {} },
   meta: { createdAt: new Date().toISOString() }
 });
 
@@ -34,7 +39,11 @@ function load() {
   if (MODE === 'cloud') return blank();
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...blank(), ...JSON.parse(raw) } : blank();
+    const s = raw ? { ...blank(), ...JSON.parse(raw) } : blank();
+    // 예전 버전 데이터에 새 영역 기본값을 채웁니다
+    s.community = { posts: [], reviews: {}, chat: [], ...s.community };
+    s.partners = { list: [], reviews: {}, ...s.partners };
+    return s;
   } catch { return blank(); }
 }
 
@@ -76,6 +85,19 @@ async function hashPw(password, saltB64, iter = ITER) {
   return b64(bits);
 }
 
+/* ── 개인정보 동의 ────────────────────────────────────────────── */
+function requireConsent(consent) {
+  if (!consent?.age14) throw new Error('만 14세 이상만 가입할 수 있어요.');
+  if (!consent?.privacy) throw new Error('개인정보 수집·이용 동의가 필요해요.');
+}
+const consentDocs = (partner = false) => ['privacy', 'age14', ...(partner ? ['partner_terms'] : [])];
+const consentRows = (userId, partner = false) =>
+  consentDocs(partner).map(doc => ({ user_id: userId, doc, version: PRIVACY_VERSION }));
+const localConsents = (partner = false) =>
+  consentDocs(partner).map(doc => ({ doc, version: PRIVACY_VERSION, agreedAt: new Date().toISOString() }));
+
+function stashPending(data) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(data)); } catch { /* 무시 */ } }
+
 /* ── 인증 ─────────────────────────────────────────────────────── */
 export const auth = {
   current() {
@@ -84,26 +106,87 @@ export const auth = {
     return Object.values(state.users).find(u => u.id === state.session) || null;
   },
 
+  /** 내 동의 이력 (로컬은 즉시, 클라우드는 hydrate 때 채워둔 사본) */
+  consents() {
+    const u = this.current();
+    return (MODE === 'cloud' ? cloudUser?.consents : u?.consents) || [];
+  },
+
   /** @returns {{needsConfirm:boolean}} */
-  async signup({ email, password, nick }) {
+  async signup({ email, password, nick, consent }) {
     email = String(email || '').trim().toLowerCase();
     nick = String(nick || '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('이메일 주소를 다시 한 번 봐주세요!');
     if (!nick) throw new Error('뭐라고 불러드릴까요? 닉네임을 적어주세요');
     if (nick.length > 20) throw new Error('닉네임은 20자까지만 가능해요');
     if (String(password).length < 8) throw new Error('비밀번호는 8자 이상으로 해주세요');
+    requireConsent(consent);
 
     if (MODE === 'cloud') {
       const { needsConfirm, user } = await C.cloudAuth.signUp({ email, password, nick });
-      if (!needsConfirm && user) await hydrate();
+      if (!needsConfirm && user) {
+        await C.addConsents(consentRows(user.id)).catch(err => fail(err));
+        await hydrate();
+      } else {
+        // 인증 전에는 RLS 때문에 못 쓰므로, 첫 로그인 때 동의 이력을 넣습니다
+        stashPending({ consent: true });
+      }
       return { needsConfirm };
     }
 
     if (state.users[email]) throw new Error('이미 가입된 이메일이에요');
     const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     const id = uid();
-    state.users[email] = { id, email, nick, salt, hash: await hashPw(password, salt), iter: ITER, createdAt: new Date().toISOString() };
+    state.users[email] = { id, email, nick, salt, hash: await hashPw(password, salt), iter: ITER,
+      consents: localConsents(), createdAt: new Date().toISOString() };
     state.data[id] = { dogs: [], col: {}, settings: { theme: 'light' } };
+    state.session = id;
+    persist();
+    return { needsConfirm: false };
+  },
+
+  /** 사업자(동물병원·용품점) 가입 — 계정은 공용 인증, 업체 정보는 partners 영역에 분리 저장 */
+  async signupPartner({ email, password, business, consent }) {
+    email = String(email || '').trim().toLowerCase();
+    const biz = {
+      kind: business?.kind || 'etc',
+      name: String(business?.name || '').trim(),
+      bizNo: String(business?.bizNo || '').trim(),
+      tel: String(business?.tel || '').trim() || null,
+      region: String(business?.region || '').trim() || null,
+      addr: String(business?.addr || '').trim() || null,
+      url: String(business?.url || '').trim() || null,
+      intro: String(business?.intro || '').trim() || null
+    };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('이메일 주소를 다시 한 번 봐주세요!');
+    if (String(password).length < 8) throw new Error('비밀번호는 8자 이상으로 해주세요');
+    if (!biz.name) throw new Error('상호명을 적어주세요!');
+    if (biz.name.length > 60) throw new Error('상호명은 60자까지만 가능해요');
+    if (!/^[0-9]{3}-?[0-9]{2}-?[0-9]{5}$/.test(biz.bizNo)) throw new Error('사업자등록번호 10자리를 확인해주세요 (예: 123-45-67890)');
+    requireConsent(consent);
+    if (!consent?.partnerTerms) throw new Error('파트너 운영 안내 동의가 필요해요.');
+    const nick = biz.name.slice(0, 20);
+
+    if (MODE === 'cloud') {
+      const { needsConfirm, user } = await C.cloudAuth.signUp({ email, password, nick });
+      if (!needsConfirm && user) {
+        await C.addConsents(consentRows(user.id, true)).catch(err => fail(err));
+        await C.upsertPartner({ id: user.id, ...biz });
+        await hydrate();
+      } else {
+        stashPending({ consent: true, partner: true, business: biz });
+      }
+      return { needsConfirm };
+    }
+
+    if (state.users[email]) throw new Error('이미 가입된 이메일이에요');
+    const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+    const id = uid();
+    state.users[email] = { id, email, nick, role: 'partner', salt, hash: await hashPw(password, salt), iter: ITER,
+      consents: localConsents(true), createdAt: new Date().toISOString() };
+    state.data[id] = { dogs: [], col: {}, settings: { theme: 'light' } };
+    state.partners.list.unshift({ id, ...biz, verified: false, reviewCount: 0, reviewAvg: null,
+      createdAt: new Date().toISOString() });
     state.session = id;
     persist();
     return { needsConfirm: false };
@@ -195,11 +278,24 @@ async function hydrate() {
   if (!session) { cloudUser = null; state = blank(); ready = true; persist(); return; }
 
   const u = session.user;
-  let profile = null;
+
+  // 이메일 인증 대기 중에 못 넣었던 동의·업체 정보를 이제 넣습니다
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    if (pending) {
+      await C.addConsents(consentRows(u.id, !!pending.partner)).catch(() => { /* 이미 있음 */ });
+      if (pending.business) await C.upsertPartner({ id: u.id, ...pending.business }).catch(e => fail(e));
+      localStorage.removeItem(PENDING_KEY);
+    }
+  } catch { /* 무시 */ }
+
+  let profile = null, consents = [];
   try { profile = await C.loadProfile(u.id); } catch (e) { fail(e); }
+  try { consents = await C.loadConsents(u.id); } catch { /* 표시용이라 조용히 */ }
   cloudUser = {
     id: u.id, email: u.email,
     nick: profile?.nick || u.user_metadata?.nick || '집사',
+    consents: consents.map(c => ({ doc: c.doc, version: c.version, agreedAt: c.agreed_at })),
     createdAt: u.created_at
   };
 
@@ -209,7 +305,10 @@ async function hydrate() {
   } catch (e) { fail(e); state.data[u.id] ||= { dogs: [], col: {}, settings: {} }; }
 
   try { state.community = await C.loadCommunity(u.id); }
-  catch (e) { fail(e); state.community = { posts: [], reviews: {} }; }
+  catch (e) { fail(e); state.community = { posts: [], reviews: {}, chat: [] }; }
+
+  try { state.partners.list = await C.loadPartners(); }
+  catch (e) { fail(e); state.partners.list = []; }
 
   ready = true;
   persist();
@@ -273,7 +372,8 @@ export const dogs = {
     const d = { id: uid(), userId: u.id, createdAt: new Date().toISOString(), ...dog };
     m.dogs.push(d);
     m.col[d.id] = Object.fromEntries(RECORD_TABLES.map(t => [t, []]));
-    if (!settings.get('activeDog')) (m.settings ||= {}).activeDog = d.id;
+    // settings.set 을 거쳐야 클라우드 settings 에도 반영됩니다
+    if (!settings.get('activeDog')) settings.set('activeDog', d.id);
     push(() => C.insert('dogs', d));
     persist();
     return d;
@@ -288,7 +388,7 @@ export const dogs = {
     const m = mine(); if (!m) return;
     m.dogs = m.dogs.filter(d => d.id !== id);
     delete m.col[id];
-    if (m.settings?.activeDog === id) m.settings.activeDog = m.dogs[0]?.id || null;
+    if (m.settings?.activeDog === id) settings.set('activeDog', m.dogs[0]?.id || null);
     push(() => C.remove('dogs', id));   // 기록은 DB의 on delete cascade 로 함께 정리됩니다
     persist();
   }
@@ -337,13 +437,25 @@ export function col(name, dogId) {
 }
 
 /* ── 커뮤니티 ─────────────────────────────────────────────────── */
+/* 로컬 모드는 별점을 글 안(p.ratings)에 두므로, 화면용 집계를 여기서 계산합니다 */
+function withRating(p) {
+  if (!p || MODE === 'cloud') return p;
+  const rs = p.ratings || [];
+  const me = auth.current();
+  return Object.assign(p, {
+    ratingCount: rs.length,
+    ratingAvg: rs.length ? +(rs.reduce((s, r) => s + r.stars, 0) / rs.length).toFixed(1) : null,
+    myStars: rs.find(r => r.userId === me?.id)?.stars ?? null
+  });
+}
+
 export const community = {
   posts(kind) {
     const list = state.community.posts || [];
     const f = kind ? list.filter(p => p.kind === kind) : list;
-    return [...f].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return [...f].map(withRating).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   },
-  get(id) { return (state.community.posts || []).find(p => p.id === id) || null; },
+  get(id) { return withRating((state.community.posts || []).find(p => p.id === id) || null); },
 
   post({ kind, title, body, tags = [], productId = null }) {
     const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
@@ -386,6 +498,49 @@ export const community = {
     persist();
   },
 
+  /** 별점 — 1인 1표, 다시 누르면 갱신 (제안·의견 글에 사용) */
+  rate(postId, stars) {
+    const u = auth.current(); const p = this.get(postId); if (!u || !p) return;
+    stars = Math.min(5, Math.max(1, Math.round(+stars || 0)));
+    if (MODE === 'cloud') {
+      // 화면에 먼저 반영 (서버 집계는 다음 새로고침 때 맞춰집니다)
+      const total = (p.ratingAvg || 0) * (p.ratingCount || 0);
+      if (p.myStars == null) {
+        p.ratingCount = (p.ratingCount || 0) + 1;
+        p.ratingAvg = +((total + stars) / p.ratingCount).toFixed(1);
+      } else {
+        p.ratingAvg = +((total - p.myStars + stars) / (p.ratingCount || 1)).toFixed(1);
+      }
+      p.myStars = stars;
+      push(() => C.ratePost(postId, u.id, stars));
+    } else {
+      const rs = (p.ratings ||= []);
+      const mine = rs.find(r => r.userId === u.id);
+      if (mine) mine.stars = stars; else rs.push({ userId: u.id, stars });
+    }
+    persist();
+  },
+
+  /* ── 대화창 (라운지) ── */
+  chat() { return state.community.chat || []; },
+  chatSend(body) {
+    const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
+    body = String(body || '').trim();
+    if (!body) return null;
+    if (body.length > 500) throw new Error('한 번에 500자까지만 보낼 수 있어요.');
+    const m = { id: uid(), body, author: u.nick, authorId: u.id, createdAt: new Date().toISOString() };
+    (state.community.chat ||= []).push(m);
+    push(() => C.sendChat({ id: m.id, userId: u.id, body }));
+    persist();
+    return m;
+  },
+  chatRemove(id) {
+    const u = auth.current(); if (!u) return;
+    state.community.chat = (state.community.chat || []).filter(m => !(m.id === id && m.authorId === u.id));
+    push(() => C.delChat(id));
+    persist();
+  },
+
   reviews(productId) { return state.community.reviews?.[productId] || []; },
   review(productId, { stars, body }) {
     const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
@@ -413,6 +568,81 @@ export const community = {
     const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
     if (MODE !== 'cloud') throw new Error('서버 연결이 필요한 기능이에요.');
     return C.report({ reporter_id: u.id, target_type: targetType, target_id: targetId, reason });
+  }
+};
+
+/* ── 파트너 (동물병원·용품점) — 회원 건강 데이터와 분리된 영역 ── */
+const PARTNER_FIELDS = ['kind', 'name', 'bizNo', 'tel', 'region', 'addr', 'url', 'intro'];
+
+export const partners = {
+  list(kind) {
+    const all = state.partners.list || [];
+    return kind ? all.filter(p => p.kind === kind) : [...all];
+  },
+  get(id) { return (state.partners.list || []).find(p => p.id === id) || null; },
+  /** 지금 로그인한 계정이 파트너면 그 업체 정보 */
+  mine() { const u = auth.current(); return u ? this.get(u.id) : null; },
+
+  async updateMine(patch) {
+    const u = auth.current(); const p = this.mine();
+    if (!u || !p) throw new Error('파트너 계정이 아니에요.');
+    const clean = {};
+    PARTNER_FIELDS.forEach(k => { if (patch[k] !== undefined) clean[k] = String(patch[k] || '').trim() || null; });
+    if (clean.name === null) throw new Error('상호명을 적어주세요!');
+    if (clean.bizNo && !/^[0-9]{3}-?[0-9]{2}-?[0-9]{5}$/.test(clean.bizNo)) throw new Error('사업자등록번호 10자리를 확인해주세요');
+    Object.assign(p, clean);
+    if (MODE === 'cloud') {
+      const row = { id: u.id };
+      PARTNER_FIELDS.forEach(k => { row[k] = p[k] ?? null; });
+      row.updated_at = new Date().toISOString();
+      await C.upsertPartner(row);
+    }
+    persist();
+  },
+
+  reviews(partnerId) { return state.partners.reviews?.[partnerId] || []; },
+  /** 클라우드에서는 업체 후기를 열 때 한 번 불러옵니다 */
+  async loadReviews(partnerId) {
+    if (MODE === 'cloud') {
+      try { (state.partners.reviews ||= {})[partnerId] = await C.loadPartnerReviews(partnerId); persist(); }
+      catch (e) { fail(e); }
+    }
+    return this.reviews(partnerId);
+  },
+  review(partnerId, { stars, body }) {
+    const u = auth.current(); if (!u) throw new Error('먼저 로그인해주세요!');
+    if (this.mine()?.id === partnerId) throw new Error('내 업체에는 후기를 남길 수 없어요.');
+    const bucket = ((state.partners.reviews ||= {})[partnerId] ||= []);
+    const existing = bucket.find(r => r.authorId === u.id);
+    const id = existing?.id || uid();
+    if (existing) Object.assign(existing, { stars, body, updatedAt: new Date().toISOString() });
+    else bucket.unshift({ id, stars, body, author: u.nick, authorId: u.id, createdAt: new Date().toISOString() });
+    const item = this.get(partnerId);
+    if (item) {
+      const rs = bucket;
+      item.reviewCount = rs.length;
+      item.reviewAvg = +(rs.reduce((s, r) => s + r.stars, 0) / rs.length).toFixed(1);
+    }
+    push(() => C.upsertPartnerReview({ id, partner_id: partnerId, user_id: u.id, stars, body,
+      updated_at: new Date().toISOString() }));
+    persist();
+  },
+  unreview(partnerId, id) {
+    const u = auth.current(); const b = state.partners.reviews?.[partnerId]; if (!u || !b) return;
+    state.partners.reviews[partnerId] = b.filter(r => !(r.id === id && r.authorId === u.id));
+    const item = this.get(partnerId);
+    if (item) {
+      const rs = state.partners.reviews[partnerId];
+      item.reviewCount = rs.length;
+      item.reviewAvg = rs.length ? +(rs.reduce((s, r) => s + r.stars, 0) / rs.length).toFixed(1) : null;
+    }
+    push(() => C.delPartnerReview(id));
+    persist();
+  },
+  score(partnerId) {
+    const p = this.get(partnerId);
+    if (!p || !p.reviewCount) return null;
+    return { avg: p.reviewAvg, n: p.reviewCount };
   }
 };
 
@@ -446,6 +676,7 @@ export const backup = {
     }
     delete state.data[u.id];
     delete state.users[u.email];
+    state.partners.list = (state.partners.list || []).filter(p => p.id !== u.id);
     state.session = null;
     persist();
   }
