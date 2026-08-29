@@ -5,3 +5,4 @@
 .serve.pid
 .vercel
 node_modules/
+.claude/
