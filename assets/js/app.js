@@ -19,7 +19,7 @@ import products from './views/products.js';
 import community from './views/community.js';
 import adopt from './views/adopt.js';
 import partnersView from './views/partners.js';
-import privacyView, { policyHTML } from './views/privacy.js';
+import privacyView, { policyHTML, termsHTML } from './views/privacy.js';
 import settingsView from './views/settings.js';
 import adminView from './views/admin.js';
 
@@ -202,6 +202,7 @@ function paint() {
 
 /* ── 처리방침 재동의 화면 — 동의 전까지 앱을 쓸 수 없습니다 ── */
 const RECONSENT_LABELS = {
+  terms: '(필수) 서비스 이용약관에 동의해요',
   privacy: '(필수) 개인정보 수집·이용에 동의해요',
   partner_terms: '(필수) 업체 정보가 디렉터리에 공개되는 것에 동의해요'
 };
@@ -219,7 +220,7 @@ function reconsentScreen(root, due) {
       <div class="field" style="margin-bottom:14px">
         ${due.map(d => `<label class="check" style="margin-bottom:7px"><input type="checkbox" name="${esc(d)}" required>
           <span>${RECONSENT_LABELS[d] || esc(d)}
-          ${d === 'privacy' ? `<button type="button" class="btn btn-ghost btn-sm" data-policy style="padding:1px 7px;font-size:11.5px">내용 보기</button>` : ''}</span></label>`).join('')}
+          ${['privacy', 'terms'].includes(d) ? `<button type="button" class="btn btn-ghost btn-sm" data-doc="${esc(d)}" style="padding:1px 7px;font-size:11.5px">내용 보기</button>` : ''}</span></label>`).join('')}
       </div>
       <div class="row" style="gap:8px">
         <button class="btn btn-primary" type="submit">동의하고 계속하기</button>
@@ -228,10 +229,12 @@ function reconsentScreen(root, due) {
     </form>
   </div>`;
 
-  root.querySelector('[data-policy]')?.addEventListener('click', e => {
+  root.querySelectorAll('[data-doc]').forEach(b => b.addEventListener('click', e => {
     e.preventDefault();
-    modal({ title: '개인정보처리방침', wide: true, footer: false, body: policyHTML(), onSubmit: () => {} });
-  });
+    const terms = b.dataset.doc === 'terms';
+    modal({ title: terms ? '서비스 이용약관' : '개인정보처리방침', wide: true, footer: false,
+      body: terms ? termsHTML() : policyHTML(), onSubmit: () => {} });
+  }));
   root.querySelector('[data-later]')?.addEventListener('click', async () => {
     await auth.logout(); authView.reset(); location.hash = '#/'; render();
   });

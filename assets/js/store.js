@@ -20,7 +20,7 @@ export const MODE = isCloud() ? 'cloud' : 'local';
 export const isCloudMode = () => MODE === 'cloud';
 
 /* 개인정보처리방침 판번호 — 문구를 고치면 반드시 올리고, 동의도 다시 받으세요 */
-export const PRIVACY_VERSION = '1.0 (2026-08-29)';
+export const PRIVACY_VERSION = '1.0 (2026-08-30)';
 
 const blank = () => ({
   users: {}, session: null, data: {},
@@ -88,13 +88,19 @@ async function hashPw(password, saltB64, iter = ITER) {
 /* ── 개인정보 동의 ────────────────────────────────────────────── */
 function requireConsent(consent) {
   if (!consent?.age14) throw new Error('만 14세 이상만 가입할 수 있어요.');
+  if (!consent?.terms) throw new Error('서비스 이용약관 동의가 필요해요.');
   if (!consent?.privacy) throw new Error('개인정보 수집·이용 동의가 필요해요.');
 }
-const consentDocs = (partner = false) => ['privacy', 'age14', ...(partner ? ['partner_terms'] : [])];
-const consentRows = (userId, partner = false) =>
-  consentDocs(partner).map(doc => ({ user_id: userId, doc, version: PRIVACY_VERSION }));
-const localConsents = (partner = false) =>
-  consentDocs(partner).map(doc => ({ doc, version: PRIVACY_VERSION, agreedAt: new Date().toISOString() }));
+const consentDocs = (partner = false) => ['privacy', 'age14', 'terms', ...(partner ? ['partner_terms'] : [])];
+/* 마케팅(선택)은 거부도 이력으로 남깁니다 (agreed=false) — 앱과 같은 규칙 */
+const consentRows = (userId, partner = false, marketing = false) => [
+  ...consentDocs(partner).map(doc => ({ user_id: userId, doc, version: PRIVACY_VERSION, agreed: true })),
+  { user_id: userId, doc: 'marketing', version: PRIVACY_VERSION, agreed: !!marketing }
+];
+const localConsents = (partner = false, marketing = false) => [
+  ...consentDocs(partner).map(doc => ({ doc, version: PRIVACY_VERSION, agreedAt: new Date().toISOString() })),
+  { doc: 'marketing', version: PRIVACY_VERSION, agreedAt: new Date().toISOString(), agreed: !!marketing }
+];
 
 function stashPending(data) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(data)); } catch { /* 무시 */ } }
 
@@ -125,11 +131,11 @@ export const auth = {
     if (MODE === 'cloud') {
       const { needsConfirm, user } = await C.cloudAuth.signUp({ email, password, nick });
       if (!needsConfirm && user) {
-        await C.addConsents(consentRows(user.id)).catch(err => fail(err));
+        await C.addConsents(consentRows(user.id, false, consent?.marketing)).catch(err => fail(err));
         await hydrate();
       } else {
         // 인증 전에는 RLS 때문에 못 쓰므로, 첫 로그인 때 동의 이력을 넣습니다
-        stashPending({ consent: true });
+        stashPending({ consent: true, marketing: !!consent?.marketing });
       }
       return { needsConfirm };
     }
@@ -138,7 +144,7 @@ export const auth = {
     const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     const id = uid();
     state.users[email] = { id, email, nick, salt, hash: await hashPw(password, salt), iter: ITER,
-      consents: localConsents(), createdAt: new Date().toISOString() };
+      consents: localConsents(false, consent?.marketing), createdAt: new Date().toISOString() };
     state.data[id] = { dogs: [], col: {}, settings: { theme: 'light' } };
     state.session = id;
     persist();
@@ -170,11 +176,11 @@ export const auth = {
     if (MODE === 'cloud') {
       const { needsConfirm, user } = await C.cloudAuth.signUp({ email, password, nick });
       if (!needsConfirm && user) {
-        await C.addConsents(consentRows(user.id, true)).catch(err => fail(err));
+        await C.addConsents(consentRows(user.id, true, consent?.marketing)).catch(err => fail(err));
         await C.upsertPartner({ id: user.id, ...biz });
         await hydrate();
       } else {
-        stashPending({ consent: true, partner: true, business: biz });
+        stashPending({ consent: true, partner: true, marketing: !!consent?.marketing, business: biz });
       }
       return { needsConfirm };
     }
@@ -183,7 +189,7 @@ export const auth = {
     const salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     const id = uid();
     state.users[email] = { id, email, nick, role: 'partner', salt, hash: await hashPw(password, salt), iter: ITER,
-      consents: localConsents(true), createdAt: new Date().toISOString() };
+      consents: localConsents(true, consent?.marketing), createdAt: new Date().toISOString() };
     state.data[id] = { dogs: [], col: {}, settings: { theme: 'light' } };
     state.partners.list.unshift({ id, ...biz, verified: false, reviewCount: 0, reviewAvg: null,
       createdAt: new Date().toISOString() });
@@ -283,7 +289,7 @@ async function hydrate() {
   try {
     const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
     if (pending) {
-      await C.addConsents(consentRows(u.id, !!pending.partner)).catch(() => { /* 이미 있음 */ });
+      await C.addConsents(consentRows(u.id, !!pending.partner, !!pending.marketing)).catch(() => { /* 이미 있음 */ });
       if (pending.business) await C.upsertPartner({ id: u.id, ...pending.business }).catch(e => fail(e));
       localStorage.removeItem(PENDING_KEY);
     }
@@ -655,7 +661,7 @@ export function reconsentDue() {
   const consents = auth.consents();
   const latest = doc => [...consents].filter(c => c.doc === doc)
     .sort((a, b) => String(b.agreedAt).localeCompare(String(a.agreedAt)))[0];
-  const docs = ['privacy', ...(partners.mine() ? ['partner_terms'] : [])];
+  const docs = ['privacy', 'terms', ...(partners.mine() ? ['partner_terms'] : [])];
   return docs.filter(d => latest(d)?.version !== PRIVACY_VERSION);
 }
 

@@ -2,7 +2,7 @@
 import { auth, isCloudMode } from '../store.js';
 import { esc, toast, modal } from '../ui.js';
 import { dogIcon } from '../icons.js';
-import { policyHTML } from './privacy.js';
+import { policyHTML, termsHTML } from './privacy.js';
 import { PARTNER_KINDS } from './partners.js';
 
 let mode = 'login';       // login | signup | biz | forgot | recovery | sent
@@ -11,15 +11,20 @@ let sentKind = 'signup';  // signup | reset
 
 /* 개인정보 수집·이용 동의(필수) — 법정 고지 사항을 확인하고 체크합니다 */
 function consentFields(partner = false) {
+  const viewBtn = doc =>
+    `<button type="button" class="btn btn-ghost btn-sm" data-doc="${doc}" style="padding:1px 7px;font-size:11.5px">내용 보기</button>`;
   return `
     <div class="field" style="margin-bottom:14px">
       <label class="check" style="margin-bottom:7px"><input type="checkbox" name="age14" required>
         <span>(필수) 만 14세 이상이에요</span></label>
+      <label class="check" style="margin-bottom:7px"><input type="checkbox" name="terms" required>
+        <span>(필수) 서비스 이용약관에 동의해요 ${viewBtn('terms')}</span></label>
       <label class="check" style="margin-bottom:7px"><input type="checkbox" name="privacy" required>
-        <span>(필수) 개인정보 수집·이용에 동의해요
-        <button type="button" class="btn btn-ghost btn-sm" data-policy style="padding:1px 7px;font-size:11.5px">내용 보기</button></span></label>
-      ${partner ? `<label class="check"><input type="checkbox" name="partnerTerms" required>
+        <span>(필수) 개인정보 수집·이용에 동의해요 ${viewBtn('privacy')}</span></label>
+      ${partner ? `<label class="check" style="margin-bottom:7px"><input type="checkbox" name="partnerTerms" required>
         <span>(필수) 업체 정보가 디렉터리에 공개되는 것에 동의해요</span></label>` : ''}
+      <label class="check"><input type="checkbox" name="marketing">
+        <span>(선택) 소식·혜택 알림을 받아볼래요</span></label>
     </div>`;
 }
 
@@ -193,10 +198,12 @@ export default {
       this.mount(root, { onDone, recovery: false });
     }));
 
-    /* 동의 문구의 "내용 보기" — 체크박스를 건드리지 않고 처리방침만 띄웁니다 */
-    root.querySelectorAll('[data-policy]').forEach(b => b.addEventListener('click', e => {
+    /* 동의 문구의 "내용 보기" — 체크박스를 건드리지 않고 전문만 띄웁니다 */
+    root.querySelectorAll('[data-doc]').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
-      modal({ title: '개인정보처리방침', wide: true, footer: false, body: policyHTML(), onSubmit: () => {} });
+      const terms = b.dataset.doc === 'terms';
+      modal({ title: terms ? '서비스 이용약관' : '개인정보처리방침', wide: true, footer: false,
+        body: terms ? termsHTML() : policyHTML(), onSubmit: () => {} });
     }));
 
     root.querySelector('[data-resend]')?.addEventListener('click', async e => {
@@ -217,7 +224,7 @@ export default {
       try {
         if (mode === 'signup') {
           if (f.password !== f.password2) throw new Error('두 비밀번호가 서로 달라요!');
-          const consent = { age14: !!f.age14, privacy: !!f.privacy };
+          const consent = { age14: !!f.age14, terms: !!f.terms, privacy: !!f.privacy, marketing: !!f.marketing };
           const { needsConfirm } = await auth.signup({ ...f, consent });
           if (needsConfirm) {
             sentTo = f.email.trim(); sentKind = 'signup'; mode = 'sent';
@@ -233,7 +240,8 @@ export default {
           const { needsConfirm } = await auth.signupPartner({
             email: f.email, password: f.password,
             business: { kind: f.bizKind, name: f.bizName, bizNo: f.bizNo, tel: f.bizTel, region: f.bizRegion },
-            consent: { age14: !!f.age14, privacy: !!f.privacy, partnerTerms: !!f.partnerTerms }
+            consent: { age14: !!f.age14, terms: !!f.terms, privacy: !!f.privacy,
+              partnerTerms: !!f.partnerTerms, marketing: !!f.marketing }
           });
           if (needsConfirm) {
             sentTo = f.email.trim(); sentKind = 'signup'; mode = 'sent';

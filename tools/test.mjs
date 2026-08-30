@@ -27,14 +27,22 @@ console.log('\n[모드]');
 t('설정이 비었으면 local 모드', S.MODE === 'local', S.MODE);
 
 console.log('\n[인증]');
-const CONSENT = { age14: true, privacy: true };
+const CONSENT = { age14: true, privacy: true, terms: true };
 try { await S.auth.signup({ email: 'noc@test.com', password: 'password123', nick: 'x' }); t('동의 없인 가입 불가', false); }
 catch (e) { t('동의 없인 가입 불가', /14세|동의/.test(e.message), e.message); }
+try {
+  await S.auth.signup({ email: 'noterms@test.com', password: 'password123', nick: 'x',
+    consent: { age14: true, privacy: true } });
+  t('이용약관 미동의 거부', false);
+} catch (e) { t('이용약관 미동의 거부', e.message.includes('이용약관'), e.message); }
 const signupResult = await S.auth.signup({ email: 'A@Test.com', password: 'password123', nick: '몽이집사', consent: CONSENT });
 t('가입 후 로그인 상태', S.auth.current()?.email === 'a@test.com');
 t('로컬 가입은 이메일 인증 불필요', signupResult.needsConfirm === false);
-t('동의 이력 저장 (privacy+age14)', S.auth.consents().length === 2
-  && S.auth.consents().every(c => c.version === S.PRIVACY_VERSION), JSON.stringify(S.auth.consents()));
+t('동의 이력 저장 (필수 3종 + 마케팅 거부 이력)', S.auth.consents().length === 4
+  && S.auth.consents().every(c => c.version === S.PRIVACY_VERSION)
+  && S.auth.consents().find(c => c.doc === 'marketing')?.agreed === false
+  && ['privacy', 'age14', 'terms'].every(d => S.auth.consents().some(c => c.doc === d)),
+  JSON.stringify(S.auth.consents()));
 t('평문 비밀번호 미저장', !JSON.stringify(S._debug.state()).includes('password123'));
 await S.auth.logout();
 t('로그아웃', S.auth.current() === null);
@@ -157,7 +165,8 @@ await S.auth.signupPartner({ email: 'vet@test.com', password: 'password123',
   consent: { ...CONSENT, partnerTerms: true } });
 const myBiz = S.partners.mine();
 t('파트너 가입 · 디렉터리 등록', S.partners.list().length === 1 && myBiz?.name === '몽몽동물병원' && myBiz.verified === false);
-t('파트너 동의 이력 3건', S.auth.consents().length === 3 && S.auth.consents().some(c => c.doc === 'partner_terms'));
+t('파트너 동의 이력 5건 (partner_terms 포함)', S.auth.consents().length === 5
+  && S.auth.consents().some(c => c.doc === 'partner_terms'));
 try { S.partners.review(myBiz.id, { stars: 5, body: '셀프 칭찬' }); t('내 업체 후기 차단', false); }
 catch { t('내 업체 후기 차단', true); }
 await S.auth.login({ email: 'a@test.com', password: 'password123' });
