@@ -22,6 +22,12 @@ class MungColors {
   static const brandSoftDark = Color(0xFF33241A);
 }
 
+/// ListTile trailing·다이얼로그·Row 안에서 쓰는 작은 버튼용 (테마 기본은 전체 폭)
+final ButtonStyle compactButton = FilledButton.styleFrom(
+  minimumSize: const Size(0, 40),
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+);
+
 ThemeData mungTheme(Brightness b) {
   final dark = b == Brightness.dark;
   final scheme = ColorScheme.fromSeed(

@@ -48,16 +48,42 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '확인'));
     await tester.pumpAndSettle();
 
-    // 홈 진입 + 동의 이력 표시
+    // 홈 진입 + 프로필 시작 카드
     expect(find.textContaining('반가워요, 몽이집사님'), findsOneWidget);
-    expect(find.text('내 동의 내역'), findsOneWidget);
-    expect(find.textContaining('privacy'), findsOneWidget);
-    expect(find.textContaining('terms'), findsOneWidget);
+    expect(find.text('우리 아이 소개하기'), findsOneWidget);
 
-    // 저장소 검증: 동의 이력 5건(필수 3 + 선택 1) 중 marketing 은 동의(전체 동의였으므로)
+    // 저장소 검증: 동의 이력 4건(필수 3 + 선택 1) 전부 동의(전체 동의였으므로)
     final user = await auth.current();
     expect(user, isNotNull);
     expect(user!.consents.length, 4);
     expect(user.consents.every((c) => c.agreed), isTrue);
+
+    // ── 이어서: 아이 프로필 등록 ──
+    await tester.tap(find.text('우리 아이 소개하기')); // 홈 카드 → 프로필 화면
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FloatingActionButton, '우리 아이 소개하기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, '이름'), '몽이');
+    await tester.enterText(find.widgetWithText(TextFormField, '몸무게(kg)'), '4.2');
+    await tester.tap(find.text('등록하기'));
+    await tester.pumpAndSettle();
+
+    // 프로필 화면: 카드 + 첫 체중 기록
+    expect(find.text('몽이'), findsWidgets);
+    expect(find.textContaining('4.2kg'), findsWidgets);
+
+    // 체중 기록 추가 → 현재 체중 갱신
+    await tester.tap(find.text('기록하기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '몸무게(kg)'), '4.5');
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('4.5kg'), findsWidgets);
+
+    // 홈으로 돌아오면 요약 카드에 반영
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('말티즈'), findsNothing); // 견종 미입력이었음
+    expect(find.textContaining('4.5kg'), findsOneWidget);
   });
 }
