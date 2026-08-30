@@ -143,17 +143,28 @@
 
 ---
 
-## 6. 스크린샷 규격
+## 6. 스크린샷 · 스토어 이미지 (생성 완료)
 
-| 스토어 | 필요 |
-|---|---|
-| App Store | 6.9"(1320×2868) 필수 · 6.5"(1284×2778) 권장 — 각 3~10장 |
-| Play | 휴대전화 스크린샷 2~8장(최소 320px) + **아이콘 512×512** + **그래픽 이미지 1024×500** |
+| 파일 | 규격 | 용도 |
+|---|---|---|
+| `dist/screenshots/6.9/*.png` (7장) | 1320×2868 | App Store 6.9" |
+| `dist/screenshots/6.5/*.png` (7장) | 1242×2688 | App Store 6.5" · Play 휴대전화 |
+| `dist/store/play-icon-512.png` | 512×512 | Play 앱 아이콘 |
+| `dist/store/play-feature-1024x500.png` | 1024×500 | Play 그래픽 이미지 |
 
-추천 순서: 홈(기능 목록) → 밥 기록(칼로리 계산) → 접종·구충(일정) → 약 챙기기(재고 경고)
-→ 진료 기록 → 화식 레시피(위험 재료)
+순서: `01-home`(기능 목록) → `02-diet`(칼로리 계산) → `03-vaccine`(접종 일정) →
+`04-meds`(재고 경고) → `05-medical`(누적 진료비) → `06-recipes`(위험 재료) → `07-profile`
 
-생성: `tools/make-store-screenshots.sh` *(미작성 — 필요 시 요청)*
+**다시 만들기** — 화면을 고쳤거나 다른 기기 규격이 필요할 때:
+
+```bash
+tools/make-screenshots.sh <시뮬레이터 UDID> <출력폴더이름>
+node tools/make-app-icons.mjs      # 아이콘·그래픽 이미지
+```
+
+통합 테스트(`app/integration_test/screenshots_test.dart`)가 화면을 순서대로 이동하고
+스크립트가 기기 해상도 그대로 캡처합니다. 데모 데이터는 `tools/seed-demo.py` 가
+실행 시점 기준 날짜로 넣으므로 "오늘" 표시가 항상 맞습니다.
 
 ---
 

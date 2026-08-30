@@ -75,9 +75,44 @@ function render(svg, outPng, size) {
   console.log('  ✓', outPng.replace(ROOT + '/', ''));
 }
 
+/** Play 그래픽 이미지 (1024×500) — 스토어 목록 상단 배너 */
+function featureGraphicSVG() {
+  const k = 300 / 64; // 두들 높이 300px
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${BRAND}"/>
+      <stop offset="1" stop-color="${BRAND_LIGHT}"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#g)"/>
+  <g transform="translate(140 ${250 - ART_CENTER_Y * k}) scale(${k})">
+    ${doodleBody('bichon')}
+  </g>
+  <text x="470" y="228" font-family="-apple-system, 'Apple SD Gothic Neo', sans-serif"
+        font-size="86" font-weight="800" fill="#ffffff">멍케어</text>
+  <text x="470" y="298" font-family="-apple-system, 'Apple SD Gothic Neo', sans-serif"
+        font-size="34" font-weight="500" fill="#ffffff" opacity=".92">우리 아이 건강 수첩</text>
+  <text x="470" y="356" font-family="-apple-system, 'Apple SD Gothic Neo', sans-serif"
+        font-size="26" font-weight="400" fill="#ffffff" opacity=".8">밥 · 산책 · 접종 · 약 · 진료를 한 곳에</text>
+</svg>`;
+}
+
 mkdirSync(OUT, { recursive: true });
 console.log('▸ 브랜딩 이미지 생성 (웹 두들 재사용)');
-render(iconSVG(), join(OUT, 'icon.png'), 1024);                       // 스토어·런처 아이콘
+render(iconSVG(), join(OUT, 'icon.png'), 1024);                       // 런처 아이콘 원본
 render(iconSVG({ transparentBg: true }), join(OUT, 'icon_fg.png'), 1024); // 안드로이드 적응형 전경
 render(splashSVG(), join(OUT, 'splash.png'), 768);                    // 스플래시 로고
+
+// 스토어 제출용 (dist/store)
+const STORE = join(ROOT, 'dist/store');
+mkdirSync(STORE, { recursive: true });
+render(iconSVG(), join(STORE, 'play-icon-512.png'), 512);             // Play 아이콘 512×512
+{ // 그래픽 이미지는 정사각이 아니라 따로 렌더합니다
+  const tmp = join(STORE, '_tmp.svg');
+  writeFileSync(tmp, featureGraphicSVG());
+  execFileSync('rsvg-convert', ['-w', '1024', '-h', '500', tmp, '-o', join(STORE, 'play-feature-1024x500.png')]);
+  rmSync(tmp);
+  console.log('  ✓ dist/store/play-feature-1024x500.png');
+}
 console.log(`배경색: 아이콘 ${BRAND}→${BRAND_LIGHT} / 스플래시 ${BG}`);
