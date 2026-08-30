@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import '../../models/dog.dart';
 import '../../services/breeds.dart';
 import '../../services/dog_store.dart';
+import '../../services/health.dart';
 import '../../theme.dart';
-
-const activityLabels = {'low': '집순이·집돌이', 'normal': '보통', 'high': '에너자이저'};
 
 class DogFormScreen extends StatefulWidget {
   const DogFormScreen({super.key, required this.store, this.dog});
@@ -29,7 +28,7 @@ class _DogFormScreenState extends State<DogFormScreen> {
   bool _customMode = false;
   DateTime? _birth;
   String _sex = 'M';
-  String _activity = 'normal';
+  String _activity = 'neutered';
   bool _neutered = false;
 
   @override
@@ -76,7 +75,16 @@ class _DogFormScreenState extends State<DogFormScreen> {
       lastDate: now,
       helpText: '생일 (모르면 추정 날짜도 좋아요)',
     );
-    if (picked != null) setState(() => _birth = picked);
+    if (picked != null) {
+      setState(() {
+        _birth = picked;
+        // 나이·중성화에 맞는 급여 활동량을 추천값으로 (직접 고르면 그대로 둠)
+        if (widget.dog == null) {
+          _activity = suggestActivity(
+              Dog(id: '_', name: '_', birth: picked, neutered: _neutered));
+        }
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -172,10 +180,14 @@ class _DogFormScreenState extends State<DogFormScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: _activity,
-                    decoration: const InputDecoration(labelText: '활동량'),
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: '급여 기준 활동량'),
                     items: [
-                      for (final e in activityLabels.entries)
-                        DropdownMenuItem(value: e.key, child: Text(e.value)),
+                      for (final a in activityLevels)
+                        DropdownMenuItem(
+                            value: a.key,
+                            child: Text(a.label, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13.5))),
                     ],
                     onChanged: (v) => setState(() => _activity = v!),
                   ),

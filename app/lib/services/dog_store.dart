@@ -65,7 +65,38 @@ class DogStore {
     final data = _load();
     data['dogs'] = ((data['dogs'] as List?) ?? []).where((d) => (d as Map)['id'] != dogId).toList();
     (data['weights'] as Map?)?.remove(dogId);
+    (data['records'] as Map?)?.remove(dogId);
     if (data['activeDogId'] == dogId) data.remove('activeDogId');
+    await _save(data);
+  }
+
+  /* ── 일반 기록 (meals·walks·meds… — 웹 col() 과 같은 자유 필드 구조) ── */
+  List<Map<String, dynamic>> records(String dogId, String type) {
+    final list = (((_load()['records'] as Map?)?[dogId] as Map?)?[type] as List?) ?? const [];
+    final rs = list.map((r) => (r as Map).cast<String, dynamic>()).toList();
+    rs.sort((a, b) => (b['date'] as String? ?? '').compareTo(a['date'] as String? ?? ''));
+    return rs;
+  }
+
+  Future<Map<String, dynamic>> addRecord(String dogId, String type, Map<String, dynamic> rec) async {
+    rec = {'id': newId(), ...rec};
+    final data = _load();
+    final byDog = ((data['records'] as Map?) ?? {}).cast<String, dynamic>();
+    final byType = ((byDog[dogId] as Map?) ?? {}).cast<String, dynamic>();
+    byType[type] = [...((byType[type] as List?) ?? []), rec];
+    byDog[dogId] = byType;
+    data['records'] = byDog;
+    await _save(data);
+    return rec;
+  }
+
+  Future<void> removeRecord(String dogId, String type, String recId) async {
+    final data = _load();
+    final byDog = ((data['records'] as Map?) ?? {}).cast<String, dynamic>();
+    final byType = ((byDog[dogId] as Map?) ?? {}).cast<String, dynamic>();
+    byType[type] = ((byType[type] as List?) ?? []).where((r) => (r as Map)['id'] != recId).toList();
+    byDog[dogId] = byType;
+    data['records'] = byDog;
     await _save(data);
   }
 

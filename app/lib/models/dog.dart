@@ -7,7 +7,7 @@ class Dog {
   String sex;          // 'M' | 'F'
   double? weight;      // 최신 체중(kg) — 체중 기록의 최신값과 동기화
   bool neutered;
-  String activity;     // 'low' | 'normal' | 'high'
+  String activity;     // health.dart activityLevels 의 key (웹 H.ACTIVITY 와 동일)
   final DateTime createdAt;
 
   Dog({
@@ -18,7 +18,7 @@ class Dog {
     this.sex = 'M',
     this.weight,
     this.neutered = false,
-    this.activity = 'normal',
+    this.activity = 'neutered',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -42,7 +42,7 @@ class Dog {
         sex: j['sex'] as String? ?? 'M',
         weight: (j['weight'] as num?)?.toDouble(),
         neutered: j['neutered'] as bool? ?? false,
-        activity: j['activity'] as String? ?? 'normal',
+        activity: j['activity'] as String? ?? 'neutered',
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }

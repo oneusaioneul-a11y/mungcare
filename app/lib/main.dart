@@ -6,10 +6,13 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'services/auth_scope.dart';
 import 'services/auth_service.dart';
+import 'services/breeds.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 견종 데이터 프리로드 — sizeOf(산책 목표 등)가 어느 화면에서든 동작하도록
+  try { await Breeds.names(); } catch (_) { /* 자산 로드 실패 시 기본값으로 동작 */ }
   final prefs = await SharedPreferences.getInstance();
   // Supabase 프로젝트가 준비되면 여기서 CloudAuthService 로 교체합니다
   final auth = LocalAuthService(prefs);

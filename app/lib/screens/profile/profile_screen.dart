@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/dog.dart';
 import '../../services/breeds.dart';
 import '../../services/dog_store.dart';
+import '../../services/health.dart';
 import '../../theme.dart';
 import 'dog_form_screen.dart';
 
@@ -145,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 10),
                         Row(children: [
                           _stat('현재 체중', dog.weight == null ? '-' : '${dog.weight}kg'),
-                          _stat('활동량', activityLabels[dog.activity] ?? dog.activity),
+                          _stat('활동량', activityLabel(dog.activity)),
                           _stat('성별', dog.sex == 'F' ? '암컷' : '수컷'),
                         ]),
                       ],

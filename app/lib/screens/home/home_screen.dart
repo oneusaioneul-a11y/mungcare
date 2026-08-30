@@ -8,6 +8,8 @@ import '../../services/breeds.dart';
 import '../../services/dog_store.dart';
 import '../auth/login_screen.dart';
 import '../profile/profile_screen.dart';
+import '../records/diet_screen.dart';
+import '../records/walk_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DogStore? _store;
 
   static const _planned = [
-    ('🍚', '밥 · 화식 · 약 · 산책', '매일 기록'),
+    ('💊', '약 챙기기 · 화식 레시피', '매일 기록'),
     ('💉', '접종 · 진료 · 알러지', '병원 · 건강'),
     ('💬', '수다방 · 용품 리뷰', '커뮤니티'),
     ('🏥', '동물병원 · 용품점', '파트너 디렉터리'),
@@ -43,6 +45,30 @@ class _HomeScreenState extends State<HomeScreen> {
       _user = user;
       _store = DogStore(prefs, user.id);
     });
+  }
+
+  Widget _featureTile(BuildContext context, String emoji, String title, String sub,
+      Widget Function(DogStore, dynamic) builder) {
+    return Card(
+      child: ListTile(
+        leading: Text(emoji, style: const TextStyle(fontSize: 24)),
+        title: Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+        subtitle: Text(sub, style: const TextStyle(fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () async {
+          final store = _store;
+          final dog = store?.active();
+          if (store == null || dog == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('먼저 위에서 우리 아이를 소개해주세요!')));
+            return;
+          }
+          await Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => builder(store, dog)));
+          if (mounted) setState(() {});
+        },
+      ),
+    );
   }
 
   @override
@@ -91,6 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+                _featureTile(context, '🍚', '밥 기록', '하루 권장 칼로리와 오늘 먹은 양',
+                    (store, dog) => DietScreen(store: store, dog: dog)),
+                _featureTile(context, '🐾', '산책 기록', '주간 합계와 하루 목표',
+                    (store, dog) => WalkScreen(store: store, dog: dog)),
                 const SizedBox(height: 12),
                 Text('곧 열릴 기능들이에요 (웹에서 이식 중)',
                     style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),

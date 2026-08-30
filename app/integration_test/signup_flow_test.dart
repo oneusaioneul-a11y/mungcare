@@ -85,5 +85,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('말티즈'), findsNothing); // 견종 미입력이었음
     expect(find.textContaining('4.5kg'), findsOneWidget);
+
+    // ── 밥 기록: 권장 칼로리 표시 + 사료 kcal 자동 계산 ──
+    await tester.tap(find.text('밥 기록'));
+    await tester.pumpAndSettle();
+    expect(find.text('하루 이만큼'), findsOneWidget);
+    await tester.tap(find.text('밥 먹었어요'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '뭘 먹었나요?'), '오리 사료');
+    await tester.enterText(find.widgetWithText(TextField, '급여량(g)'), '50');
+    await tester.tap(find.widgetWithText(FilledButton, '기록하기'));
+    await tester.pumpAndSettle();
+    // 50g × 3600kcal/kg = 180 — 기록 줄 + '오늘 먹은 양' 통계 양쪽에 반영
+    expect(find.textContaining('180kcal'), findsWidgets);
+
+    // ── 산책 기록: 추가 후 주간 합계 반영 ──
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('산책 기록'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('산책 다녀왔어요'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '얼마나 걸었나요? (분)'), '35');
+    await tester.tap(find.widgetWithText(FilledButton, '기록하기'));
+    await tester.pumpAndSettle();
+    expect(find.text('35분'), findsWidgets);
+    expect(find.text('요 일주일'), findsOneWidget);
   });
 }

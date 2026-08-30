@@ -53,6 +53,21 @@ void main() {
     expect(s.weights(a.id), isEmpty, reason: '체중 기록도 함께 삭제');
   });
 
+  test('일반 기록(meals·walks) 추가·삭제·타입 분리·최신순 정렬', () async {
+    final s = await fresh();
+    final d = await s.addDog(mongE());
+    await s.addRecord(d.id, 'meals', {'date': '2026-08-29', 'name': '오리 사료', 'kcal': 120});
+    final m2 = await s.addRecord(d.id, 'meals', {'date': '2026-08-30', 'name': '간식', 'kcal': 30});
+    await s.addRecord(d.id, 'walks', {'date': '2026-08-30', 'minutes': 30});
+    expect(s.records(d.id, 'meals').length, 2);
+    expect(s.records(d.id, 'meals').first['name'], '간식', reason: '최신 날짜가 먼저');
+    expect(s.records(d.id, 'walks').length, 1, reason: '타입별로 분리 저장');
+    await s.removeRecord(d.id, 'meals', m2['id'] as String);
+    expect(s.records(d.id, 'meals').single['name'], '오리 사료');
+    await s.removeDog(d.id);
+    expect(s.records(d.id, 'walks'), isEmpty, reason: '아이 삭제 시 기록도 삭제');
+  });
+
   test('사용자별 저장 분리', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
