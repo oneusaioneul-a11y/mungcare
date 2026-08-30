@@ -238,8 +238,25 @@ node tools/crawl.mjs --dry
 - **스텁(외부 계약·키 필요)**: 소셜 로그인(카카오·구글·애플 — Supabase Auth 프로바이더 설정 필요,
   `lib/services/social_auth.dart` 주석에 절차), 휴대폰 본인인증(NICE/KCB 계약 필요,
   `lib/services/phone_verify.dart` — 개발용 모의 인증번호 000000)
-- **미결정**: 번들 ID 현재 `kr.mungcare.mungcareApp` (스토어 첫 업로드 전 확정 필요),
-  Supabase 연동(웹 SETUP 완료 후 CloudAuthService 추가), 나머지 15개 화면 이식
+- **미결정**: Supabase 연동(웹 SETUP 완료 후 CloudAuthService 추가), 나머지 화면 이식
+
+### 스토어 배포 (2026-08-30 기준 — 아직 업로드 전)
+
+| 항목 | 값 |
+|---|---|
+| Apple 계정 | **oneusaioneul@icloud.com** (기존 카페쿠폰 계정과 별개, 신규) |
+| 번들 ID / applicationId | `kr.mungcare.app` (iOS·Android 동일) |
+| 앱 표시 이름 | 멍케어 |
+| 버전 | `1.0.0+1` (`app/pubspec.yaml`) |
+| 빌드·업로드 | `tools/ios-release.sh <TEAM_ID> <KEY_ID> <ISSUER_ID>` — 분석·테스트 후 IPA 빌드 + TestFlight 전송 |
+| API 키 위치 | `tools/asc_keys/AuthKey_<KEY_ID>.p8` (**gitignore 처리됨 — 커밋 금지**) |
+
+**업로드 전 남은 일** (계정 소유자만 가능):
+1. oneusaioneul@icloud.com 으로 **Apple Developer Program 등록** (연 129,000원) — 미등록 시 TestFlight 업로드 자체 불가
+2. App Store Connect → Users and Access → Integrations → **API 키 생성**(App Manager) → `.p8`·Key ID·Issuer ID 확보
+3. App Store Connect 에 **앱 등록** (번들 ID `kr.mungcare.app`)
+4. Xcode → Runner → Signing & Capabilities 에서 **팀 선택** (`DEVELOPMENT_TEAM` 은 기존 계정 값을 지워 비워둔 상태)
+5. 심사 전: 개인정보처리방침 URL(`https://mungcare.vercel.app/#/privacy`)·App Privacy 답안·스크린샷·보호책임자 실명(9장 3번) 필요
 
 ## 10. 알려진 한계 · 백로그
 

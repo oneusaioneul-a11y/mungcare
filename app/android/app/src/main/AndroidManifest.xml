@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mungcare_app"
+        android:label="멍케어"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
