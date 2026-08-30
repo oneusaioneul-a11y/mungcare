@@ -12,6 +12,7 @@ import '../records/allergy_screen.dart';
 import '../records/diet_screen.dart';
 import '../records/medical_screen.dart';
 import '../records/meds_screen.dart';
+import '../records/recipes_screen.dart';
 import '../records/vaccine_screen.dart';
 import '../records/walk_screen.dart';
 
@@ -27,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   DogStore? _store;
 
   static const _planned = [
-    ('🍲', '화식 레시피', '위험 재료 확인 포함'),
     ('💬', '수다방 · 용품 리뷰', '커뮤니티'),
     ('🏥', '동물병원 · 용품점', '파트너 디렉터리'),
     ('🐾', '유기견 입양', '공공데이터'),
@@ -124,6 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     (store, dog) => DietScreen(store: store, dog: dog)),
                 _featureTile(context, '🐾', '산책 기록', '주간 합계와 하루 목표',
                     (store, dog) => WalkScreen(store: store, dog: dog)),
+                _featureTile(context, '🍲', '화식 레시피', '위험 재료 확인 포함',
+                    (store, dog) => RecipesScreen(store: store, dog: dog)),
                 _featureTile(context, '💊', '약 챙기기', '오늘 줬는지, 얼마나 남았는지',
                     (store, dog) => MedsScreen(store: store, dog: dog)),
                 _featureTile(context, '💉', '접종 · 구충', '다음 일정과 지난 이력',

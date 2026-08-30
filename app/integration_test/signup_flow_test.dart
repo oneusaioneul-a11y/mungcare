@@ -181,5 +181,25 @@ void main() {
     await tester.tap(find.text('오늘 줬어요?'));
     await tester.pumpAndSettle();
     expect(find.text('✓ 오늘 줬어요'), findsOneWidget);
+
+    // ── 화식 레시피: 위험 재료가 있으면 저장은 하되 경고 대화상자 ──
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('화식 레시피'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('레시피 만들기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '레시피 이름'), '닭가슴살 화식');
+    await tester.enterText(
+        find.widgetWithText(TextField, '뭐가 들어가나요? (한 줄에 하나씩)'), '닭가슴살 300g\n양파 50g');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('⚠️ 이 재료는 빼주세요!'), findsOneWidget);
+    expect(find.textContaining('빈혈'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '알겠어요'));
+    await tester.pumpAndSettle();
+    // 저장은 되어 있고, 카드에 위험 재료 배지가 붙음
+    expect(find.text('닭가슴살 화식'), findsOneWidget);
+    expect(find.textContaining('⚠️ 양파'), findsOneWidget);
   });
 }
