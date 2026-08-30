@@ -38,10 +38,10 @@ Supabase 프로젝트를 하나 만들고 값 두 개만 채우면 정식 회원
 1. **Authentication → Sign In / Providers → Email**
 2. **Confirm email** 을 켭니다 → 가입 시 인증 메일이 발송됩니다
 3. **Authentication → URL Configuration**
-   - **Site URL**: `https://mungcare.vercel.app`
+   - **Site URL**: `https://mungcare-app.web.app`
    - **Redirect URLs** 에 아래 두 줄을 추가:
      ```
-     https://mungcare.vercel.app
+     https://mungcare-app.web.app
      http://localhost:8123
      ```
    (로컬에서 테스트하려면 두 번째 줄이 필요합니다)

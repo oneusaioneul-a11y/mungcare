@@ -5,9 +5,10 @@
 | 항목 | 값 |
 |---|---|
 | 서비스 | 멍케어 — 반려견 통합 건강 관리 웹 서비스 |
-| 운영 URL | https://mungcare.vercel.app |
-| 저장소 | https://github.com/redreta/mungcare (branch: `main`) |
-| 호스팅 | Vercel — project `mungcare` (`prj_q9R2fi3KXQMyJHDn6RKugJpGqWVU`, org `team_3x72pgUXpAgIPWz5Gqj9BUph`) |
+| 운영 URL | https://mungcare-app.web.app |
+| 저장소 | https://github.com/oneusaioneul-a11y/mungcare (branch: `main`) · 구 저장소 redreta/mungcare 는 2026-08-30 이후 미갱신 |
+| 호스팅 | **Firebase Hosting** — 프로젝트 `mungcare-app` (계정 oneusaioneul@gmail.com) · 배포 `tools/deploy-firebase.sh` |
+| 구 호스팅 | Vercel `mungcare` (`prj_q9R2fi3KXQMyJHDn6RKugJpGqWVU`) — 2026-08-30 Firebase 로 이전, 현재 내용이 오래됨 |
 | DB/인증 | Supabase (Postgres + Auth) — **프로젝트 셋업 미완, 아래 "운영 체크리스트" 참고** |
 | 외부 API | 공공데이터포털 — 농림축산검역본부 동물보호관리시스템 (유기동물 조회 v2) |
 
@@ -36,7 +37,9 @@
 
 - **프론트엔드**: Vanilla JS (ES Modules), 빌드 없음. `index.html` → `assets/js/app.js` 진입
 - **의존성**: supabase-js v2 (자체 포함 번들 `assets/vendor/supabase.js`, CDN 미사용) 뿐
-- **서버**: Vercel 서버리스 함수 2개 (`api/gov.js`, `api/gov-status.js`) — 공공데이터 프록시
+- **서버**: 서버리스 함수 2개 (`api/gov.js`, `api/gov-status.js`) — 공공데이터 프록시.
+  `functions/index.js` 가 이 핸들러를 그대로 감싸 Firebase Functions 로 배포합니다(단일 소스).
+  **⚠️ Functions 배포는 Blaze 요금제 필요 — 미전환 상태라 현재 `/api/*` 는 404**
 - **DB**: Supabase Postgres — 스키마 4개 분리 + RLS (아래 4장)
 - **스타일**: 단일 CSS (`assets/css/app.css`), 라이트/다크는 `data-theme` 속성
 - **테스트**: `node tools/test.mjs` — 브라우저 없이 Node로 도는 회귀 테스트 69건
@@ -212,7 +215,7 @@ node tools/crawl.mjs --dry
 1. **Supabase 셋업 + cloud 모드 전환** *(현재 운영은 브라우저 저장 모드로 도는 상태)*
    `supabase/SETUP.md` 절차대로: 프로젝트 생성(서울 리전) → `schema.sql` 통째 실행 →
    **Data API Exposed schemas 4개 추가** → Email Confirm ON + Redirect URLs
-   (`https://mungcare.vercel.app`, `http://localhost:8123`) → `assets/js/config.js` 에
+   (`https://mungcare-app.web.app`, `http://localhost:8123`) → `assets/js/config.js` 에
    Project URL·anon key 기입(anon key 는 커밋 가능, **service_role 키는 절대 금지**) → `./deploy.sh`
 2. **공공데이터 서비스키**: Vercel env `DATA_GO_KR_KEY`. 현재 전 서비스 코드 30.
    `normalizeKey` 반영 배포 후 `/api/gov-status` 로 재확인 → 여전히 30이면
@@ -263,7 +266,7 @@ node tools/crawl.mjs --dry
 2. App Store Connect → Users and Access → Integrations → **API 키 생성**(App Manager) → `.p8`·Key ID·Issuer ID 확보
 3. App Store Connect 에 **앱 등록** (번들 ID `kr.mungcare.app`)
 4. Xcode → Runner → Signing & Capabilities 에서 **팀 선택** (`DEVELOPMENT_TEAM` 은 기존 계정 값을 지워 비워둔 상태)
-5. 심사 전: 개인정보처리방침 URL(`https://mungcare.vercel.app/#/privacy`)·App Privacy 답안·스크린샷·보호책임자 실명(9장 3번) 필요
+5. 심사 전: 개인정보처리방침 URL(`https://mungcare-app.web.app/#/privacy`)·App Privacy 답안·스크린샷·보호책임자 실명(9장 3번) 필요
 
 ## 10. 알려진 한계 · 백로그
 

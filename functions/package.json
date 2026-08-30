@@ -1,0 +1,13 @@
+{
+  "name": "mungcare-functions",
+  "description": "멍케어 공공데이터 프록시 (Firebase Functions)",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^6.6.0"
+  }
+}

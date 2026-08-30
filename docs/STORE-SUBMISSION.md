@@ -89,9 +89,9 @@
 
 | 항목 | 값 |
 |---|---|
-| 개인정보처리방침 | https://mungcare.vercel.app/#/privacy |
+| 개인정보처리방침 | https://mungcare-app.web.app/#/privacy |
 | 지원(문의) 이메일 | oneusaioneul@gmail.com |
-| 마케팅 URL (선택) | https://mungcare.vercel.app |
+| 마케팅 URL (선택) | https://mungcare-app.web.app |
 
 개인정보 보호책임자 / 앱 담당자: **Minsun Chin · oneusaioneul@gmail.com**
 

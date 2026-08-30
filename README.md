@@ -104,7 +104,7 @@ vercel env add DATA_GO_KR_KEY development
 
 1. 공공데이터포털 → `유기동물 조회 서비스` 검색 → **활용신청**
 2. 자동 승인이지만 키가 실제로 열리기까지 **최대 1시간**(일부 API는 하루) 걸립니다
-3. `https://mungcare.vercel.app/api/gov-status` 를 열어 상태를 확인하세요
+3. `https://mungcare-app.web.app/api/gov-status` 를 열어 상태를 확인하세요
    (앱에서는 **설정 → 공공데이터 연결 → 지금 확인하기**)
 
 | 오류 코드 | 뜻 |
@@ -118,7 +118,7 @@ vercel env add DATA_GO_KR_KEY development
 
 ### 운영 주소 — Vercel
 
-**<https://mungcare.vercel.app>**
+**<https://mungcare-app.web.app>**
 
 ```bash
 ./deploy.sh            # 검사 → 운영 배포 → 실제 접속 확인까지 한 번에

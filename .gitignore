@@ -7,3 +7,9 @@
 node_modules/
 .claude/
 build/
+
+# Firebase Functions 의존성
+functions/node_modules/
+functions/api/
+functions/package-lock.json
+.firebase/
