@@ -90,6 +90,19 @@ class DogStore {
     return rec;
   }
 
+  /// 기존 기록 덮어쓰기 (id 유지 · 목록 위치 유지)
+  Future<void> updateRecord(String dogId, String type, Map<String, dynamic> rec) async {
+    final data = _load();
+    final byDog = ((data['records'] as Map?) ?? {}).cast<String, dynamic>();
+    final byType = ((byDog[dogId] as Map?) ?? {}).cast<String, dynamic>();
+    byType[type] = ((byType[type] as List?) ?? [])
+        .map((r) => (r as Map)['id'] == rec['id'] ? rec : r)
+        .toList();
+    byDog[dogId] = byType;
+    data['records'] = byDog;
+    await _save(data);
+  }
+
   Future<void> removeRecord(String dogId, String type, String recId) async {
     final data = _load();
     final byDog = ((data['records'] as Map?) ?? {}).cast<String, dynamic>();

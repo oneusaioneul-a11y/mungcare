@@ -6,6 +6,18 @@ import 'package:mungcare_app/main.dart';
 import 'package:mungcare_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// 스낵바는 ScaffoldMessenger 큐에 쌓이므로(앞선 기록 알림들이 순서를 기다림)
+/// 고정 시간 대신 나타날 때까지 폴링합니다.
+Future<void> pumpUntilFound(WidgetTester tester, Finder finder,
+    {Duration timeout = const Duration(seconds: 25)}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  fail('시간 안에 나타나지 않았어요: $finder');
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -129,5 +141,45 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '오늘 했어요').first);
     await tester.pumpAndSettle();
     expect(find.text('D-30'), findsOneWidget);
+
+    // ── 알러지 등록 → 밥 기록에서 경고가 뜨는지 (화면 간 연동) ──
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('알러지'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ActionChip, '닭고기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('닭고기'), findsWidgets);
+    expect(find.text('중등도'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('밥 기록'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('밥 먹었어요'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '뭘 먹었나요?'), '닭고기 간식');
+    await tester.tap(find.widgetWithText(FilledButton, '기록하기'));
+    await pumpUntilFound(tester, find.textContaining('알러지 있는 재료'));
+    await tester.pumpAndSettle();
+
+    // ── 약 등록 → 재고 경고 ──
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('약 챙기기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('약 추가'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '약 이름이 뭐예요?'), '하트가드');
+    await tester.enterText(find.widgetWithText(TextField, '남은 수량'), '3');
+    await tester.enterText(find.widgetWithText(TextField, '하루에'), '1');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('3일치 남음'), findsOneWidget, reason: '5일 이하면 경고 칩');
+    await tester.tap(find.text('오늘 줬어요?'));
+    await tester.pumpAndSettle();
+    expect(find.text('✓ 오늘 줬어요'), findsOneWidget);
   });
 }

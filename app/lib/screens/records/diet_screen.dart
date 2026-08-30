@@ -101,6 +101,20 @@ class _DietScreenState extends State<DietScreen> {
     );
     if (ok != true || name.text.trim().isEmpty) return;
 
+    // 등록된 알러지 재료가 이름에 들어 있으면 알려줍니다 (웹과 동일 규칙)
+    final mealName = name.text.trim();
+    final hits = widget.store
+        .records(dog.id, 'allergies')
+        .map((a) => a['name'] as String)
+        .where((a) => a.isNotEmpty && mealName.contains(a))
+        .toList();
+    if (hits.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('⚠️ 잠깐! ${hits.join(', ')} — 알러지 있는 재료가 들어있어요'),
+        duration: const Duration(milliseconds: 3500),
+      ));
+    }
+
     final g = double.tryParse(grams.text.trim());
     var k = double.tryParse(kcal.text.trim());
     // 사료는 kcal 미입력 시 kcal/kg 기준으로 자동 계산 (웹과 동일, 기본 3600)
@@ -109,7 +123,7 @@ class _DietScreenState extends State<DietScreen> {
     }
     await widget.store.addRecord(dog.id, 'meals', {
       'date': today(),
-      'name': name.text.trim(),
+      'name': mealName,
       'type': type,
       'grams': g,
       'kcal': k ?? 0,
