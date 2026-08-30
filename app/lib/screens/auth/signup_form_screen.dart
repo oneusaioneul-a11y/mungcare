@@ -1,9 +1,11 @@
 // 회원가입 2단계 — 계정 정보 입력. 성공하면 본인인증(선택) 단계로 갑니다.
 import 'package:flutter/material.dart';
 
+import '../../config/features.dart';
 import '../../models/consent.dart';
 import '../../services/auth_scope.dart';
 import '../../services/auth_service.dart';
+import '../home/home_screen.dart';
 import 'phone_verify_screen.dart';
 
 class SignupFormScreen extends StatefulWidget {
@@ -42,8 +44,12 @@ class _SignupFormScreenState extends State<SignupFormScreen> {
         consents: widget.consents,
       );
       if (!mounted) return;
+      // 본인인증은 기관 계약 전까지 건너뜁니다 (Features.phoneVerify)
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const PhoneVerifyScreen(afterSignup: true)),
+        MaterialPageRoute(
+            builder: (_) => Features.phoneVerify
+                ? const PhoneVerifyScreen(afterSignup: true)
+                : const HomeScreen()),
         (_) => false,
       );
     } on AuthException catch (e) {

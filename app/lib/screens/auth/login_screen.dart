@@ -1,6 +1,7 @@
 // 로그인 — 이메일 로그인 + 소셜 버튼(준비 중) + 회원가입 진입
 import 'package:flutter/material.dart';
 
+import '../../config/features.dart';
 import '../../services/auth_scope.dart';
 import '../../services/auth_service.dart';
 import '../../services/social_auth.dart';
@@ -91,23 +92,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   .push(MaterialPageRoute(builder: (_) => const ConsentScreen())),
               child: const Text('아직 계정이 없어요 — 회원가입'),
             ),
-            const SizedBox(height: 12),
-            Row(children: [
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('또는', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
-              ),
-              const Expanded(child: Divider()),
-            ]),
-            const SizedBox(height: 12),
-            for (final p in SocialProvider.values) ...[
-              OutlinedButton(
-                onPressed: () => _social(p),
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-                child: Text(p.label),
-              ),
-              const SizedBox(height: 8),
+            // 소셜 로그인은 프로바이더 키 발급 전까지 감춥니다 (Features.socialLogin)
+            if (Features.socialLogin) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('또는',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+                ),
+                const Expanded(child: Divider()),
+              ]),
+              const SizedBox(height: 12),
+              for (final p in SocialProvider.values) ...[
+                OutlinedButton(
+                  onPressed: () => _social(p),
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                  child: Text(p.label),
+                ),
+                const SizedBox(height: 8),
+              ],
             ],
           ],
         ),

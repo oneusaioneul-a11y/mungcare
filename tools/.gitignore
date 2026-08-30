@@ -1,3 +1,13 @@
 # 스토어 자격증명 — 절대 커밋 금지
 asc_keys/
 *.p8
+
+# 스토어 서명 키 — 절대 커밋 금지 (분실 시 앱 업데이트 불가)
+android_keys/
+*.jks
+*.keystore
+key.properties
+
+play_keys/
+node_modules/
+package-lock.json

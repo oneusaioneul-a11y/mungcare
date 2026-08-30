@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mungcare_app/config/features.dart';
 import 'package:mungcare_app/main.dart';
 import 'package:mungcare_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,14 +52,16 @@ void main() {
     await tester.tap(find.text('가입하기'));
     await tester.pumpAndSettle();
 
-    // 본인인증(모의): 000000 으로 통과
-    expect(find.text('휴대폰 본인인증'), findsOneWidget);
-    await tester.enterText(find.widgetWithText(TextField, '휴대폰 번호'), '01012345678');
-    await tester.tap(find.text('인증번호 받기'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextField, '인증번호 6자리'), '000000');
-    await tester.tap(find.widgetWithText(FilledButton, '확인'));
-    await tester.pumpAndSettle();
+    // 본인인증은 Features.phoneVerify 로 꺼둔 상태 — 가입 후 바로 홈으로
+    if (Features.phoneVerify) {
+      expect(find.text('휴대폰 본인인증'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, '휴대폰 번호'), '01012345678');
+      await tester.tap(find.text('인증번호 받기'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '인증번호 6자리'), '000000');
+      await tester.tap(find.widgetWithText(FilledButton, '확인'));
+      await tester.pumpAndSettle();
+    }
 
     // 홈 진입 + 프로필 시작 카드
     expect(find.textContaining('반가워요, 몽이집사님'), findsOneWidget);
