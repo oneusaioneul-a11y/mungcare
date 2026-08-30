@@ -227,6 +227,20 @@ node tools/crawl.mjs --dry
    (id 는 `data/products.json` 의 items[].id 와 일치). 대상 사이트 약관·robots 확인 후 추가
 7. `git push` — 8/29 커밋 2건 원격 반영 여부 확인
 
+## 9-1. 모바일 앱 (Flutter) — `app/`
+
+2026-08-30 시작. 웹 전 기능을 플레이스토어·앱스토어 공통(Flutter)으로 이식하는 프로젝트.
+- **완료**: 프로젝트 스캐폴드(iOS·Android), 두들 테마 이식, **한국 표준 회원가입 모듈**
+  (전체 동의 + 필수 3종[만14세·이용약관·개인정보] + 선택[마케팅] + 전문 보기 시트,
+  동의 이력 판·일시·거부까지 보관), 로그인, 홈 골격. 단위 9건 + 시뮬레이터 E2E 1건.
+- **이용약관 신설**: `app/lib/content/legal.dart` (웹에는 아직 없음 — 웹 가입에도 추가 예정.
+  ⚠️ 초안이므로 공개 전 법률 검토 권장). DB `members.consents` 는 terms/marketing 받도록 확장됨.
+- **스텁(외부 계약·키 필요)**: 소셜 로그인(카카오·구글·애플 — Supabase Auth 프로바이더 설정 필요,
+  `lib/services/social_auth.dart` 주석에 절차), 휴대폰 본인인증(NICE/KCB 계약 필요,
+  `lib/services/phone_verify.dart` — 개발용 모의 인증번호 000000)
+- **미결정**: 번들 ID 현재 `kr.mungcare.mungcareApp` (스토어 첫 업로드 전 확정 필요),
+  Supabase 연동(웹 SETUP 완료 후 CloudAuthService 추가), 나머지 15개 화면 이식
+
 ## 10. 알려진 한계 · 백로그
 
 - **관리자 도구**: `#/admin`(운영자 도구)에서 신고 처리(상태 관리·콘텐츠 삭제)·파트너 verified·회원 현황 처리 가능 (2026-08-30 구현).

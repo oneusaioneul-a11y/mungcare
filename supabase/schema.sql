@@ -46,10 +46,16 @@ $$;
 create table if not exists members.consents (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
-  doc        text not null check (doc in ('privacy','age14','partner_terms')),
+  doc        text not null,
   version    text not null,
-  agreed_at  timestamptz not null default now()
+  agreed_at  timestamptz not null default now(),
+  agreed     boolean not null default true    -- 선택 동의(marketing)는 거부도 이력으로 남김
 );
+-- 문서 종류는 앱(이용약관·마케팅)과 웹이 함께 쓰므로 명명 제약으로 관리 (확장 시 여기만 수정)
+alter table members.consents drop constraint if exists consents_doc_check;
+alter table members.consents add constraint consents_doc_check
+  check (doc in ('privacy','age14','partner_terms','terms','marketing'));
+alter table members.consents add column if not exists agreed boolean not null default true;
 create index if not exists consents_user_idx on members.consents(user_id, doc);
 
 -- 가입 시 프로필 자동 생성 (닉네임은 회원가입 메타데이터에서 가져옴)
