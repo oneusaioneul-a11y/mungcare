@@ -42,6 +42,9 @@ export function termsHTML() {
     거래·분쟁에 대해 서비스는 고의·중과실이 없는 한 책임지지 않습니다.</p>
     ${h4('제10조 (분쟁 해결)')}
     <p style="margin:0">이 약관은 대한민국 법에 따르며, 분쟁은 민사소송법상 관할 법원에 제기합니다.</p>
+    ${h4('제11조 (문의)')}
+    <p style="margin:0">서비스 이용 중 궁금한 점이나 불편한 점은 아래로 연락해 주세요.<br>
+    운영자 Minsun Chin · <a href="mailto:oneusaioneul@gmail.com">oneusaioneul@gmail.com</a></p>
     <p style="margin:8px 0 0">부칙: 이 약관은 2026-08-30부터 적용됩니다.</p>
   </div>`;
 }
@@ -98,8 +101,8 @@ export function policyHTML() {
     본인 데이터 외 접근을 차단하며, 데이터 영역을 분리해 관리합니다.</p>
 
     <h4 style="font-size:13px;margin:14px 0 6px">8. 개인정보 보호책임자</h4>
-    <p style="margin:0">이름: (운영자 성함) · 연락처: (운영 이메일)<br>
-    <span style="color:var(--warn)">※ 운영자 정보를 채워 넣은 뒤 서비스를 공개하세요.</span></p>
+    <p style="margin:0">이름: Minsun Chin · 연락처: <a href="mailto:oneusaioneul@gmail.com">oneusaioneul@gmail.com</a><br>
+    개인정보 열람·정정·삭제, 처리 정지 요구는 위 연락처로 보내주시면 지체 없이 처리해 드립니다.</p>
 
     <h4 style="font-size:13px;margin:14px 0 6px">9. 고지 의무</h4>
     <p style="margin:0">이 방침이 바뀌면 시행 7일 전부터 서비스 안에서 알리고, 판 번호를 올립니다.</p>

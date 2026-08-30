@@ -90,20 +90,21 @@
 | 항목 | 값 |
 |---|---|
 | 개인정보처리방침 | https://mungcare.vercel.app/#/privacy |
-| 지원(문의) | *(아래 3장 참고 — 기입 필요)* |
+| 지원(문의) 이메일 | oneusaioneul@gmail.com |
 | 마케팅 URL (선택) | https://mungcare.vercel.app |
+
+개인정보 보호책임자 / 앱 담당자: **Minsun Chin · oneusaioneul@gmail.com**
 
 ---
 
-## 3. ⚠️ 제출 전 반드시 채워야 할 것
+## 3. ⚠️ 제출 전 남은 것
 
-1. **개인정보 보호책임자 실명·연락처**
-   `assets/js/views/privacy.js` 8조와 `app/lib/content/legal.dart` 의
-   `(운영자 성함)` / `(운영 이메일)` 플레이스홀더.
-   개인정보보호법 제30조상 **공개 의무**이고, 양 스토어 심사에서도 개인정보처리방침
-   URL을 실제로 열어봅니다. 채운 뒤 웹을 배포(`./deploy.sh`)해야 URL에 반영됩니다.
-2. **지원 이메일** — App Store Connect·Play Console 양쪽에 필요합니다.
-3. **이용약관 법률 검토** — `app/lib/content/legal.dart` 의 약관은 초안입니다.
+1. ~~개인정보 보호책임자 실명·연락처~~ → **완료** (Minsun Chin · oneusaioneul@gmail.com).
+   웹·앱 양쪽에 반영됐습니다. **단, 웹은 `./deploy.sh` 로 배포해야 URL에 반영됩니다.**
+2. ~~지원 이메일~~ → **완료** (oneusaioneul@gmail.com)
+3. **이용약관 법률 검토** — `app/lib/content/legal.dart` 의 약관은 여전히 초안입니다.
+4. **스토어 앱 등록** — 양 콘솔에서 `kr.mungcare.app` 으로 생성
+5. **키 배치** — 7장 참고
 
 ---
 
