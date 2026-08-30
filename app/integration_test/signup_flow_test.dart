@@ -111,5 +111,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('35분'), findsWidgets);
     expect(find.text('요 일주일'), findsOneWidget);
+
+    // ── 접종 · 구충: 생일 미입력 안내 → 접종 기록 → 연간 일정 전환 ──
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('접종 · 구충'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('생년월일 등록 필요'), findsWidgets);
+    await tester.tap(find.text('오늘 맞았어요').first); // DHPPL
+    await tester.pumpAndSettle();
+    expect(find.textContaining('연간 추가 접종'), findsWidgets);
+    expect(find.text('D-365'), findsOneWidget);
+    // 구충 섹션까지 스크롤해서 심장사상충(30일 주기) 기록 → D-30
+    await tester.dragUntilVisible(find.text('심장사상충 예방'),
+        find.byType(ListView), const Offset(0, -250));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '오늘 했어요').first);
+    await tester.pumpAndSettle();
+    expect(find.text('D-30'), findsOneWidget);
   });
 }

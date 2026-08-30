@@ -1,0 +1,22 @@
+{
+  "updated": "2026-08-18",
+  "note": "국내 일반적인 접종 프로그램 예시입니다. 실제 스케줄은 담당 수의사의 지시를 따르세요.",
+  "core": [
+    { "code": "DHPPL", "name": "종합백신 (DHPPL)", "protects": "홍역·간염·파보·파라인플루엔자·렙토스피라",
+      "puppy": [6, 8, 10, 12, 14], "puppyUnit": "week", "booster": 365, "required": true },
+    { "code": "CORONA", "name": "코로나 장염", "protects": "개 코로나바이러스 장염",
+      "puppy": [6, 8], "puppyUnit": "week", "booster": 365, "required": false },
+    { "code": "KC", "name": "켄넬코프", "protects": "전염성 기관지염",
+      "puppy": [10, 12], "puppyUnit": "week", "booster": 365, "required": false },
+    { "code": "INFLUENZA", "name": "인플루엔자", "protects": "개 인플루엔자",
+      "puppy": [14, 16], "puppyUnit": "week", "booster": 365, "required": false },
+    { "code": "RABIES", "name": "광견병", "protects": "광견병 (법정 전염병)",
+      "puppy": [16], "puppyUnit": "week", "booster": 365, "required": true }
+  ],
+  "preventives": [
+    { "code": "HEARTWORM", "name": "심장사상충 예방", "cycle": 30, "note": "매월 같은 날짜에 투약. 연중 예방 권장" },
+    { "code": "DEWORM_IN", "name": "내부 구충", "cycle": 90, "note": "성견 기준 3개월 주기 (퍼피는 2주~4주 간격 반복)" },
+    { "code": "DEWORM_EX", "name": "외부 구충 (진드기·벼룩)", "cycle": 30, "note": "산책이 잦다면 연중 예방" },
+    { "code": "CHECKUP", "name": "정기 건강검진", "cycle": 365, "note": "7세 이상은 180일 주기 권장" }
+  ]
+}

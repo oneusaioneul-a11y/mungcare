@@ -9,6 +9,7 @@ import '../../services/dog_store.dart';
 import '../auth/login_screen.dart';
 import '../profile/profile_screen.dart';
 import '../records/diet_screen.dart';
+import '../records/vaccine_screen.dart';
 import '../records/walk_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const _planned = [
     ('💊', '약 챙기기 · 화식 레시피', '매일 기록'),
-    ('💉', '접종 · 진료 · 알러지', '병원 · 건강'),
+    ('🏥', '진료 기록 · 알러지', '병원 · 건강'),
     ('💬', '수다방 · 용품 리뷰', '커뮤니티'),
     ('🏥', '동물병원 · 용품점', '파트너 디렉터리'),
     ('🐾', '유기견 입양', '공공데이터'),
@@ -121,6 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     (store, dog) => DietScreen(store: store, dog: dog)),
                 _featureTile(context, '🐾', '산책 기록', '주간 합계와 하루 목표',
                     (store, dog) => WalkScreen(store: store, dog: dog)),
+                _featureTile(context, '💉', '접종 · 구충', '다음 일정과 지난 이력',
+                    (store, dog) => VaccineScreen(store: store, dog: dog)),
                 const SizedBox(height: 12),
                 Text('곧 열릴 기능들이에요 (웹에서 이식 중)',
                     style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
