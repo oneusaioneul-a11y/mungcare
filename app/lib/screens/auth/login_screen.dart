@@ -58,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
           children: [
-            const Text('🐕', style: TextStyle(fontSize: 52), textAlign: TextAlign.center),
+            // 앱 아이콘·스플래시와 같은 두들 (웹 브랜드 마크에서 생성)
+            Image.asset('assets/branding/splash.png', width: 96, height: 96),
             const SizedBox(height: 8),
             const Text('멍케어',
                 textAlign: TextAlign.center,

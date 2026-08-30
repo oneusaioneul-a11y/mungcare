@@ -1,0 +1,12 @@
+# 앱 아이콘 — 원본은 tools/make-app-icons.mjs 가 웹 두들에서 생성합니다.
+# 원본을 다시 만든 뒤:  dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/branding/icon.png"
+
+  ios: true
+  remove_alpha_ios: true # App Store 는 투명도가 있는 아이콘을 거부합니다
+
+  android: true
+  adaptive_icon_background: "#b4622d"
+  adaptive_icon_foreground: "assets/branding/icon_fg.png"
+  min_sdk_android: 21

@@ -1,0 +1,20 @@
+# 스플래시 — 원본은 tools/make-app-icons.mjs 가 생성합니다.
+# 바꾼 뒤:  dart run flutter_native_splash:create
+#
+# 색은 웹 CSS 토큰과 같습니다 (assets/css/app.css --bg / dark --bg)
+flutter_native_splash:
+  color: "#f7f5f2"
+  image: assets/branding/splash.png
+
+  color_dark: "#16130f"
+  image_dark: assets/branding/splash.png
+
+  android_12:
+    color: "#f7f5f2"
+    image: assets/branding/splash.png
+    color_dark: "#16130f"
+    image_dark: assets/branding/splash.png
+
+  android: true
+  ios: true
+  web: false

@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# flutter_native_splash 가 남기는 임시 파일
+**/ios/Runner/Base.lproj/LaunchScreen.storyboardc/
